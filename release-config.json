@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "github": {
+    "owner": "Julianschneiderofficial",
+    "repository": "js-studio-download-assistent",
+    "private": false,
+    "branch": "main",
+    "manifestPath": "releases/products.json"
+  }
+}

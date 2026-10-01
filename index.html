@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f4f5f7">
+  <title>JS Studio Download Assistent</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #171c26;
+      --muted: #687181;
+      --subtle: #89919e;
+      --line: #e5e8ec;
+      --paper: #ffffff;
+      --canvas: #f3f4f6;
+      --sidebar: #171c26;
+      --sidebar-muted: #a7afbb;
+      --accent: #2859d9;
+      --accent-hover: #1d49be;
+      --accent-soft: #edf2ff;
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    body {
+      min-width: 620px;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--canvas);
+      font-size: 14px;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      color: inherit;
+    }
+
+    .app-shell {
+      display: grid;
+      width: 100%;
+      height: 100vh;
+      min-height: 480px;
+      grid-template-columns: 218px minmax(0, 1fr);
+      grid-template-rows: 64px minmax(0, 1fr) 43px;
+    }
+
+    .topbar {
+      z-index: 1;
+      display: flex;
+      grid-column: 1 / -1;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 27px;
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+    }
+
+    .brand,
+    .brand-name,
+    .topbar-actions,
+    .topbar-button,
+    .sidebar-label,
+    .nav-link,
+    .product-layout,
+    .product-brand,
+    .product-tags,
+    .section-heading,
+    .package-row,
+    .progress-heading,
+    .footer,
+    .footer-status {
+      display: flex;
+      align-items: center;
+    }
+
+    .brand {
+      gap: 11px;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: 9px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+
+    .brand-name {
+      display: grid;
+      gap: 2px;
+      line-height: 1.1;
+    }
+
+    .brand-studio {
+      width: fit-content;
+      background: linear-gradient(180deg, #5784f2 0%, #315fce 48%, #2149a9 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.55px;
+    }
+
+    .brand-product {
+      color: #697383;
+      font-size: 10px;
+      font-weight: 650;
+      letter-spacing: 1.25px;
+      text-transform: uppercase;
+    }
+
+    .topbar-actions {
+      gap: 9px;
+    }
+
+    .topbar-button {
+      min-height: 34px;
+      gap: 8px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+      color: #384150;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: background 150ms ease, border-color 150ms ease;
+    }
+
+    .topbar-button:hover {
+      border-color: #cbd2de;
+      background: #f8f9fb;
+    }
+
+    .topbar-button svg,
+    .search-icon,
+    .nav-icon svg,
+    .download-icon svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.7;
+    }
+
+    .sidebar {
+      display: flex;
+      grid-row: 2 / 4;
+      flex-direction: column;
+      padding: 25px 13px 15px;
+      background: var(--sidebar);
+      color: #f5f6f8;
+    }
+
+    .sidebar-label {
+      justify-content: space-between;
+      padding: 0 9px 11px;
+      color: var(--sidebar-muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .sidebar-count {
+      color: #778191;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .nav-list {
+      display: grid;
+      gap: 5px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .nav-link {
+      position: relative;
+      width: 100%;
+      min-height: 60px;
+      gap: 11px;
+      padding: 9px 10px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: #f5f6f8;
+      text-align: left;
+      cursor: pointer;
+      transition: background 150ms ease;
+    }
+
+    .nav-link:hover {
+      background: rgba(255, 255, 255, 0.055);
+    }
+
+    .nav-link.active {
+      background: #262f3e;
+    }
+
+    .nav-link.active::before {
+      position: absolute;
+      top: 10px;
+      bottom: 10px;
+      left: 0;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: #6c93ff;
+      content: "";
+    }
+
+    .nav-icon {
+      display: grid;
+      width: 35px;
+      height: 35px;
+      flex: 0 0 35px;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.055);
+      color: #a9bfff;
+    }
+
+    .nav-copy {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .nav-title {
+      overflow: hidden;
+      font-size: 12px;
+      font-weight: 650;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .nav-subtitle {
+      color: #a7afbb;
+      font-size: 11px;
+    }
+
+    .sidebar-bottom {
+      margin-top: auto;
+      padding: 13px 9px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.09);
+      color: #b6beca;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .sidebar-bottom strong {
+      display: block;
+      color: #f4f5f7;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .content {
+      min-width: 0;
+      padding: 35px clamp(24px, 5vw, 58px);
+      overflow: auto;
+      background: var(--canvas);
+    }
+
+    .content-inner {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .breadcrumb {
+      margin-bottom: 13px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .page-title {
+      color: #171c26;
+      font-size: clamp(28px, 3.6vw, 36px);
+      font-weight: 700;
+      letter-spacing: -1.35px;
+      line-height: 1.14;
+    }
+
+    .page-description {
+      max-width: 570px;
+      margin-top: 10px;
+      color: #545e6d;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .section-heading {
+      justify-content: space-between;
+      margin: 31px 0 12px;
+      color: #202633;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .section-count {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .system-notice {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 17px;
+      padding: 12px 14px;
+      border: 1px solid #dce2ec;
+      border-radius: 6px;
+      background: #fff;
+      color: #465163;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .system-notice[hidden] {
+      display: none;
+    }
+
+    .system-notice.is-success {
+      border-color: #b9e6cf;
+      background: #eff9f3;
+      color: #206b43;
+    }
+
+    .system-notice.is-error {
+      border-color: #f0c5c5;
+      background: #fff5f4;
+      color: #8f3434;
+    }
+
+    .system-notice.is-info {
+      border-color: #d7e3fb;
+      background: #f1f5ff;
+      color: #304c88;
+    }
+
+    .notice-action {
+      flex: 0 0 auto;
+      padding: 6px 9px;
+      border: 1px solid currentColor;
+      border-radius: 5px;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .notice-action[hidden] {
+      display: none;
+    }
+
+    .product-card {
+      overflow: hidden;
+      border: 1px solid #e0e4e9;
+      border-radius: 9px;
+      background: var(--paper);
+    }
+
+    .product-layout {
+      justify-content: space-between;
+      gap: 20px;
+      padding: 21px;
+    }
+
+    .product-brand {
+      min-width: 0;
+      gap: 15px;
+    }
+
+    .product-art {
+      display: grid;
+      width: 58px;
+      height: 58px;
+      flex: 0 0 58px;
+      place-items: center;
+      border: 1px solid #dce4f7;
+      border-radius: 9px;
+      background: #edf2ff;
+      color: #2859d9;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+    }
+
+    .product-info {
+      min-width: 0;
+    }
+
+    .product-kicker {
+      margin-bottom: 5px;
+      color: #687181;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .product-title {
+      overflow: hidden;
+      color: #171c26;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.45px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .product-tags {
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 9px;
+    }
+
+    .tag {
+      display: inline-flex;
+      min-height: 24px;
+      align-items: center;
+      padding: 0 8px;
+      border: 1px solid #e3e6eb;
+      border-radius: 5px;
+      background: #f8f9fb;
+      color: #515b69;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .tag-version {
+      border-color: #d8e2ff;
+      background: #f2f5ff;
+      color: #284fae;
+    }
+
+    .download-button {
+      display: inline-flex;
+      min-height: 43px;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      padding: 0 17px;
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 650;
+      transition: background 140ms ease, border-color 140ms ease, transform 100ms ease;
+    }
+
+    .download-button:hover:not(:disabled) {
+      border-color: var(--accent-hover);
+      background: var(--accent-hover);
+    }
+
+    .download-button:active:not(:disabled) {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    .download-button:disabled {
+      border-color: #d8dde5;
+      background: #e8ebf0;
+      color: #596271;
+      cursor: default;
+    }
+
+    .product-actions {
+      display: flex;
+      flex: 0 0 auto;
+      gap: 8px;
+    }
+
+    .product-uninstall-button {
+      min-height: 43px;
+      padding: 0 13px;
+      border: 1px solid #edc9ca;
+      border-radius: 6px;
+      background: #fff8f8;
+      color: #a4363d;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .product-uninstall-button:hover:not(:disabled) {
+      border-color: #d99295;
+      background: #fff0f0;
+    }
+
+    .product-uninstall-button:disabled {
+      border-color: #e3e6eb;
+      background: #f5f6f8;
+      color: #8c94a0;
+      cursor: default;
+    }
+
+    .package-details {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-top: 1px solid #e9ebef;
+      background: #fafbfc;
+    }
+
+    .package-row {
+      min-height: 44px;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 21px;
+      color: #687181;
+      font-size: 12px;
+    }
+
+    .package-row + .package-row {
+      border-left: 1px solid #e9ebef;
+    }
+
+    .package-row strong {
+      color: #293140;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .progress-deck {
+      display: none;
+      padding: 16px 21px 18px;
+      border-top: 1px solid #e9ebef;
+    }
+
+    .progress-heading {
+      justify-content: space-between;
+      margin-bottom: 9px;
+      color: #293140;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .progress-number {
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-track {
+      height: 7px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: #e8ebf0;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+      transition: width 120ms linear;
+    }
+
+    .progress-stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      color: #687181;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ready-banner {
+      display: none;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 1px solid #b9e6cf;
+      border-radius: 6px;
+      background: #eff9f3;
+      color: #206b43;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .helper-copy {
+      margin-top: 14px;
+      color: #687181;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .release-notes {
+      margin-top: 15px;
+      padding: 13px 15px;
+      border: 1px solid #e6e9ef;
+      border-radius: 6px;
+      background: #fafbfc;
+      color: #525d6d;
+      font-size: 12px;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
+    .release-notes[hidden] {
+      display: none;
+    }
+
+    .release-notes strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #293140;
+      font-size: 12px;
+    }
+
+    .footer {
+      grid-column: 2;
+      justify-content: space-between;
+      padding: 0 25px;
+      border-top: 1px solid var(--line);
+      background: var(--paper);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .footer-status {
+      gap: 7px;
+    }
+
+    .footer-mark {
+      color: #3a4351;
+      font-weight: 700;
+    }
+
+    .footer-version {
+      color: #687181;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .footer-separator {
+      color: #c0c5ce;
+    }
+
+    .uninstall-button {
+      min-height: 29px;
+      padding: 0 11px;
+      border: 1px solid #d44b4f;
+      border-top-color: #ef8581;
+      border-bottom: 2px solid #a82d34;
+      border-radius: 5px;
+      background: linear-gradient(180deg, #e15c5d 0%, #c83f45 100%);
+      box-shadow: 0 2px 0 rgba(121, 31, 37, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.23);
+      color: #fff;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 650;
+      transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+    }
+
+    .uninstall-button:hover {
+      transform: translateY(-1px);
+      border-color: #cc383d;
+      border-top-color: #f18c86;
+      border-bottom-color: #98252d;
+      background: linear-gradient(180deg, #ed6867 0%, #cf3e46 100%);
+      box-shadow: 0 4px 8px rgba(157, 42, 48, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+      filter: saturate(1.08);
+    }
+
+    .uninstall-button:active {
+      transform: translateY(1px);
+      border-bottom-width: 1px;
+      box-shadow: inset 0 2px 4px rgba(98, 24, 31, 0.22);
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 2px solid #2859d9;
+      outline-offset: 3px;
+    }
+
+    .search-wrap {
+      position: relative;
+      margin: 0 1px 23px;
+    }
+
+    .search-icon {
+      position: absolute;
+      top: 50%;
+      left: 11px;
+      transform: translateY(-50%);
+      color: #a7afbb;
+      pointer-events: none;
+    }
+
+    .search-field {
+      width: 100%;
+      height: 38px;
+      padding: 0 10px 0 34px;
+      outline: none;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.055);
+      color: #f5f6f8;
+      font-size: 12px;
+    }
+
+    .search-field::placeholder {
+      color: #a7afbb;
+    }
+
+    .search-field:focus {
+      border-color: #829eff;
+    }
+
+    @media (max-width: 760px) {
+      .app-shell {
+        grid-template-columns: 185px minmax(0, 1fr);
+      }
+
+      .topbar {
+        padding: 0 16px;
+      }
+
+      .content {
+        padding: 28px 21px;
+      }
+
+      .product-layout {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .download-button {
+        flex: 1 1 auto;
+      }
+
+      .product-actions {
+        width: 100%;
+      }
+
+      .footer {
+        padding: 0 16px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      body {
+        min-width: 0;
+      }
+
+      .app-shell {
+        height: auto;
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+        grid-template-rows: 58px auto minmax(390px, 1fr) 44px;
+      }
+
+      .topbar {
+        grid-column: 1;
+      }
+
+      .brand-name {
+        gap: 2px;
+      }
+
+      .brand-studio {
+        font-size: 12px;
+      }
+
+      .brand-product {
+        font-size: 9px;
+        letter-spacing: 0.8px;
+      }
+
+      .topbar-button {
+        width: 35px;
+        justify-content: center;
+        padding: 0;
+        overflow: hidden;
+        font-size: 0;
+      }
+
+      .sidebar {
+        grid-row: 2;
+        padding: 12px;
+      }
+
+      .search-wrap {
+        margin-bottom: 13px;
+      }
+
+      .sidebar-bottom {
+        display: none;
+      }
+
+      .content {
+        grid-row: 3;
+        padding: 26px 17px;
+      }
+
+      .page-description {
+        font-size: 14px;
+      }
+
+      .product-layout {
+        padding: 16px;
+      }
+
+      .package-details {
+        grid-template-columns: 1fr;
+      }
+
+      .package-row {
+        min-height: 40px;
+        padding: 0 16px;
+      }
+
+      .package-row + .package-row {
+        border-top: 1px solid #e9ebef;
+        border-left: 0;
+      }
+
+      .footer {
+        grid-row: 4;
+        grid-column: 1;
+        gap: 8px;
+      }
+
+      .uninstall-button {
+        max-width: 145px;
+        text-align: right;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">JS</div>
+        <div class="brand-name">
+          <span class="brand-studio">JS STUDIO</span>
+          <span class="brand-product">DOWNLOAD ASSISTENT</span>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="topbar-button" type="button" onclick="alert('Das Entwicklerprofil ist aktiv.')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.7-3.2 3.1-5 7-5s6.3 1.8 7 5"></path></svg>
+          Mein Konto
+        </button>
+        <button class="topbar-button" type="button" onclick="openReleaseConfig()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="m19.4 15 .1.1 1.3 1-1.3 2.2-1.6-.6a8 8 0 0 1-1.7 1l-.3 1.7h-2.6l-.3-1.7a8 8 0 0 1-1.7-1l-1.6.6-1.3-2.2 1.3-1a7 7 0 0 1 0-2l-1.3-1 1.3-2.2 1.6.6a8 8 0 0 1 1.7-1l.3-1.7h2.6l.3 1.7a8 8 0 0 1 1.7 1l1.6-.6 1.3 2.2-1.3 1a7 7 0 0 1-.1 1.9Z"></path></svg>
+          Einstellungen
+        </button>
+        <button class="topbar-button" id="checkUpdatesButton" type="button" onclick="checkForUpdates()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"></path><path d="M4.8 9A7.5 7.5 0 0 1 18 6.5L20 12M4 17v-5h5"></path><path d="M19.2 15A7.5 7.5 0 0 1 6 17.5L4 12"></path></svg>
+          Updates suchen
+        </button>
+      </div>
+    </header>
+
+    <aside class="sidebar" aria-label="Produktnavigation">
+      <label class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.5 4.5"></path></svg>
+        <input class="search-field" id="search" type="search" placeholder="Anwendungen filtern" autocomplete="off" oninput="filterNav()">
+      </label>
+      <div class="sidebar-label">
+        <span>Meine Anwendungen</span>
+        <span class="sidebar-count" id="sidebarCount">0</span>
+        </div>
+        <ul class="nav-list" id="navList"></ul>
+      <div class="sidebar-bottom">
+        <strong>JS Studio Download Assistent</strong>
+        Programme an einem Ort verwalten.
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="content-inner">
+        <div id="assistantUpdateNotice" class="system-notice" role="status" aria-live="polite" hidden>
+          <span id="assistantUpdateMessage"></span>
+          <button id="assistantUpdateAction" class="notice-action" type="button" hidden></button>
+        </div>
+        <div id="liveBuildNotice" class="system-notice is-info" role="status" aria-live="polite" hidden>
+          <span id="liveBuildMessage"></span>
+          <button id="liveBuildDismiss" class="notice-action" type="button">Schließen</button>
+        </div>
+        <div id="catalogNotice" class="system-notice is-success" role="status" aria-live="polite" hidden>
+          <span id="catalogMessage"></span>
+          <button id="catalogDismiss" class="notice-action" type="button">Schließen</button>
+        </div>
+        <div id="productStatusNotice" class="system-notice" role="status" aria-live="polite" hidden>
+          <span id="productStatusMessage"></span>
+          <button id="productStatusAction" class="notice-action" type="button" hidden onclick="openReleaseConfig()">Release-Einstellungen öffnen</button>
+        </div>
+        <div class="breadcrumb">Anwendungen <span aria-hidden="true">/</span> Firmenprogramme</div>
+        <h1 class="page-title" id="viewHeaderTitle">Deine Programme</h1>
+        <p class="page-description">Wähle ein Programm aus der Liste, um die Details anzusehen und die Installation zu starten.</p>
+
+        <div class="section-heading">
+          <span>Verfügbare Anwendungen</span>
+          <span class="section-count" id="sectionCount">Katalog wird geladen …</span>
+        </div>
+
+        <div id="catalogEmpty" class="system-notice" role="status" hidden>
+          Im Programmkatalog sind noch keine Anwendungen veröffentlicht.
+        </div>
+
+        <article class="product-card" id="productCard" hidden>
+          <div class="product-layout">
+            <div class="product-brand">
+              <div class="product-art" aria-hidden="true">JS</div>
+              <div class="product-info">
+                <div class="product-kicker" id="cardKicker">JS Studio · Firmenprogramm</div>
+                <h2 class="product-title" id="cardHeader">JS Studio Firmenprogramm</h2>
+                <div class="product-tags">
+                  <span class="tag tag-version" id="cardVer">Noch nicht veröffentlicht</span>
+                  <span class="tag">Windows</span>
+                </div>
+              </div>
+            </div>
+            <div class="product-actions">
+              <button id="dlBtn" class="download-button" type="button" onclick="startDownload()" disabled>
+                <span class="download-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4"></path><path d="M5 17v3h14v-3"></path></svg>
+                </span>
+                <span>Installieren</span>
+              </button>
+              <button id="productUninstallButton" class="product-uninstall-button" type="button" onclick="uninstallProduct()" disabled>Deinstallieren</button>
+            </div>
+          </div>
+
+          <div class="package-details">
+            <div class="package-row"><span>Dateigröße</span><strong id="cardSize">Nicht verfügbar</strong></div>
+            <div class="package-row"><span>Plattform</span><strong>Windows-PC</strong></div>
+          </div>
+
+          <div id="progDeck" class="progress-deck" aria-live="polite">
+            <div class="progress-heading">
+              <span id="progTitle">Installation wird vorbereitet …</span>
+              <span class="progress-number" id="progNumber">0 %</span>
+            </div>
+            <div class="progress-track" role="progressbar" aria-label="Installationsfortschritt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div id="progBarFill" class="progress-fill"></div>
+            </div>
+            <div class="progress-stats">
+              <span id="progSizeText">Noch kein Paket verfügbar</span>
+              <span id="progSpeedText"></span>
+            </div>
+            <div id="finishNote" class="ready-banner">Der Installationsvorgang ist abgeschlossen.</div>
+          </div>
+        </article>
+        <div id="releaseNotes" class="release-notes" hidden>
+          <strong>Was ist neu?</strong>
+          <span id="releaseNotesText"></span>
+        </div>
+
+        <p class="helper-copy" id="helperCopy">Der Programmkatalog wird beim Start und ungefähr jede Minute aktualisiert. Neue Einträge erscheinen ohne Launcher-Update.</p>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-status"><span class="footer-mark">JS Studio Download Assistent</span><span class="footer-separator">·</span><span id="assistantVersion" class="footer-version">Version 1.0.0</span></div>
+      <button class="uninstall-button" type="button" onclick="uninstallApp()">Download Assistent deinstallieren</button>
+    </footer>
+  </div>
+
+  <script>
+    let selectedProductId = null;
+    let productReleases = {};
+    let installingProductId = null;
+    let uninstallingProductId = null;
+    const productsById = new Map();
+
+    document.getElementById('catalogDismiss').addEventListener('click', () => {
+      document.getElementById('catalogNotice').hidden = true;
+    });
+    document.getElementById('liveBuildDismiss').addEventListener('click', () => {
+      document.getElementById('liveBuildNotice').hidden = true;
+    });
+
+    function formatBytes(bytes) {
+      const divisor = bytes < 1024 ? 1 : bytes < 1024 * 1024 ? 1024 : 1024 * 1024;
+      const unit = bytes < 1024 ? 'Bytes' : bytes < 1024 * 1024 ? 'KB' : 'MB';
+      const value = (bytes / divisor).toLocaleString('de-DE', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1
+      });
+      return `${value} ${unit}`;
+    }
+
+    function setNotice(noticeId, messageId, message, kind = '', showConfigAction = false) {
+      const notice = document.getElementById(noticeId);
+      notice.className = 'system-notice' + (kind ? ' is-' + kind : '');
+      document.getElementById(messageId).innerText = message;
+      notice.hidden = false;
+
+      if (noticeId === 'productStatusNotice') {
+        document.getElementById('productStatusAction').hidden = !showConfigAction;
+      }
+    }
+
+    function setAssistantUpdateStatus(status) {
+      const notice = document.getElementById('assistantUpdateNotice');
+      const message = document.getElementById('assistantUpdateMessage');
+      const action = document.getElementById('assistantUpdateAction');
+      notice.className = 'system-notice';
+      action.hidden = true;
+      action.dataset.action = '';
+      notice.hidden = false;
+
+      if (status.status === 'checking') {
+        message.innerText = 'Prüfe die Version des Download-Assistenten …';
+      } else if (status.status === 'current') {
+        message.innerText = 'Der Download-Assistent ist aktuell (Version ' + status.version + ').';
+        notice.classList.add('is-success');
+      } else if (status.status === 'available') {
+        message.innerText = 'Neue Version ' + status.version + ' verfügbar · ' + formatBytes(status.sizeBytes)
+          + (status.releaseNotes ? ' · ' + status.releaseNotes : '');
+        action.innerText = 'Update herunterladen';
+        action.dataset.action = 'download';
+        action.hidden = false;
+        notice.classList.add('is-info');
+      } else if (status.status === 'downloading') {
+        message.innerText = 'Assistenten-Update wird heruntergeladen: ' + status.percent + ' % · '
+          + formatBytes(status.receivedBytes) + ' / ' + formatBytes(status.totalBytes);
+      } else if (status.status === 'downloaded') {
+        message.innerText = 'Version ' + status.version + ' wurde heruntergeladen. ' + (status.releaseNotes || '');
+        action.innerText = 'Installer starten';
+        action.dataset.action = 'install';
+        action.hidden = false;
+        notice.classList.add('is-success');
+      } else if (status.status === 'error') {
+        message.innerText = 'Update-Prüfung fehlgeschlagen: ' + status.message;
+        notice.classList.add('is-error');
+      } else {
+        message.innerText = 'Update-Status wird geladen …';
+      }
+    }
+
+    function updateSelectedProduct() {
+      const button = productsById.get(selectedProductId);
+      const release = productReleases[selectedProductId];
+      const installButton = document.getElementById('dlBtn');
+      const uninstallButton = document.getElementById('productUninstallButton');
+      const progressDeck = document.getElementById('progDeck');
+      const installedVersion = release ? release.installedVersion : null;
+      const productCard = document.getElementById('productCard');
+      const catalogEmpty = document.getElementById('catalogEmpty');
+
+      document.querySelectorAll('.nav-link').forEach((item) => {
+        item.classList.toggle('active', item === button);
+      });
+      productCard.hidden = !release;
+      catalogEmpty.hidden = Object.keys(productReleases).length > 0;
+      if (!release) {
+        document.getElementById('viewHeaderTitle').innerText = 'Deine Programme';
+        document.getElementById('releaseNotes').hidden = true;
+        uninstallButton.disabled = true;
+        document.getElementById('productStatusNotice').hidden = true;
+        return;
+      }
+
+      document.getElementById('viewHeaderTitle').innerText = release.name;
+      document.getElementById('cardHeader').innerText = release.name;
+      document.getElementById('cardKicker').innerText = release.description;
+      document.getElementById('cardVer').innerText = 'Version ' + release.version;
+      document.getElementById('cardSize').innerText = Number.isSafeInteger(release.sizeBytes)
+        ? formatBytes(release.sizeBytes)
+        : 'Nicht im Katalog';
+      document.getElementById('releaseNotesText').innerText = release.releaseNotes || 'Keine Versionshinweise veröffentlicht.';
+      document.getElementById('releaseNotes').hidden = !release.releaseNotes;
+      document.getElementById('helperCopy').innerText = installedVersion
+        ? 'Installiert: Version ' + installedVersion
+          + (release.updateAvailable ? ' · Version ' + release.version + ' verfügbar' : '')
+          + (Number.isSafeInteger(release.sizeBytes) ? ' · Paketgröße ' + formatBytes(release.sizeBytes) : '')
+        : 'Version ' + release.version + (Number.isSafeInteger(release.sizeBytes) ? ' · Paketgröße ' + formatBytes(release.sizeBytes) : '');
+      document.getElementById('productStatusNotice').hidden = true;
+      uninstallButton.disabled = !release.installed || !release.uninstaller
+        || uninstallingProductId === selectedProductId || installingProductId === selectedProductId;
+      uninstallButton.innerText = uninstallingProductId === selectedProductId ? 'Deinstallation läuft …' : 'Deinstallieren';
+      if (release.installed && !release.uninstaller) {
+        document.getElementById('helperCopy').innerText += ' · Kein mitgelieferter Deinstaller für diese Installation; verwende die Windows-Einstellungen.';
+      }
+
+      if (installingProductId === selectedProductId) {
+        installButton.disabled = true;
+        installButton.querySelector('span:last-child').innerText = 'Installation läuft …';
+        progressDeck.style.display = 'block';
+        return;
+      }
+
+      if (release.removedFromCatalog) {
+        installButton.disabled = true;
+        installButton.querySelector('span:last-child').innerText = 'Nicht mehr verfügbar';
+      } else if (!release) {
+        installButton.disabled = true;
+        installButton.querySelector('span:last-child').innerText = 'Noch nicht verfügbar';
+        setNotice('productStatusNotice', 'productStatusMessage', 'Für dieses Programm wurde noch kein Installationspaket veröffentlicht.');
+      } else if (release.installed) {
+        installButton.disabled = !release.updateAvailable;
+        installButton.querySelector('span:last-child').innerText = release.updateAvailable
+          ? 'Update installieren'
+          : 'Installiert';
+      } else {
+        installButton.disabled = false;
+        installButton.querySelector('span:last-child').innerText = 'Installation starten';
+      }
+
+      progressDeck.style.display = 'none';
+      document.getElementById('progBarFill').style.width = '0%';
+      document.querySelector('.progress-track').setAttribute('aria-valuenow', '0');
+      document.getElementById('finishNote').style.display = 'none';
+    }
+
+    function filterNav() {
+      const query = document.getElementById('search').value.toLowerCase();
+      const items = document.querySelectorAll('.nav-product');
+      items.forEach((item) => {
+        item.style.display = item.innerText.toLowerCase().includes(query) ? 'block' : 'none';
+      });
+    }
+
+    function pick(productButton) {
+      selectedProductId = productButton.dataset.id;
+      updateSelectedProduct();
+    }
+
+    function createProductButton(id, release, isNew) {
+      const item = document.createElement('li');
+      item.className = 'nav-product';
+      const button = document.createElement('button');
+      button.className = 'nav-link';
+      button.type = 'button';
+      button.dataset.id = id;
+      button.addEventListener('click', () => pick(button));
+
+      const icon = document.createElement('span');
+      icon.className = 'nav-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.innerHTML = '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8 9h8M8 13h8M8 17h4"></path></svg>';
+
+      const copy = document.createElement('span');
+      copy.className = 'nav-copy';
+      const title = document.createElement('span');
+      title.className = 'nav-title';
+      title.innerText = release.name;
+      const subtitle = document.createElement('span');
+      subtitle.className = 'nav-subtitle';
+      subtitle.innerText = release.description;
+      copy.append(title, subtitle);
+      button.append(icon, copy);
+
+      if (isNew) {
+        const badge = document.createElement('span');
+        badge.className = 'tag tag-version';
+        badge.innerText = 'Neu';
+        button.append(badge);
+      }
+
+      item.append(button);
+      productsById.set(id, button);
+      return item;
+    }
+
+    function renderProductStatus(status) {
+      if (status.status === 'checking') {
+        setNotice('productStatusNotice', 'productStatusMessage', 'Lade den Programmkatalog …');
+        return;
+      }
+      if (status.status === 'not-configured') {
+        setNotice('productStatusNotice', 'productStatusMessage', status.message, '', true);
+        return;
+      }
+
+      if (status.status === 'error') {
+        setNotice('productStatusNotice', 'productStatusMessage', 'Der Programmkatalog konnte nicht geladen werden: ' + status.message, 'error', true);
+        return;
+      }
+
+      productReleases = status.products;
+      const newProductIds = new Set(status.newProducts.map((product) => product.id));
+      const navList = document.getElementById('navList');
+      navList.replaceChildren();
+      productsById.clear();
+      document.getElementById('sidebarCount').innerText = String(Object.keys(productReleases).length);
+      document.getElementById('sectionCount').innerText = Object.keys(productReleases).length + ' Programme';
+      for (const [id, release] of Object.entries(productReleases)) {
+        navList.append(createProductButton(id, release, newProductIds.has(id)));
+      }
+
+      if (!productReleases[selectedProductId]) {
+        selectedProductId = Object.keys(productReleases)[0] || null;
+      }
+      if (status.newProducts.length) {
+        const descriptions = status.newProducts.slice(0, 4).map((product) =>
+          `${product.name} (Version ${product.version}, ${formatBytes(product.sizeBytes)})`
+            + (product.releaseNotes ? `: ${product.releaseNotes.slice(0, 120)}` : '')
+        );
+        const remaining = status.newProducts.length - descriptions.length;
+        const summary = descriptions.join('; ') + (remaining > 0 ? `; und ${remaining} weitere` : '');
+        document.getElementById('catalogMessage').innerText = 'Neu im Programmkatalog: ' + summary;
+        document.getElementById('catalogNotice').hidden = false;
+      } else if (status.changedProducts.length) {
+        const summaries = status.changedProducts.slice(0, 4).map((product) =>
+          `${product.name}: ${product.previousVersion} → ${product.version} (${formatBytes(product.sizeBytes)})`
+            + (product.releaseNotes ? `: ${product.releaseNotes.slice(0, 120)}` : '')
+        );
+        const remaining = status.changedProducts.length - summaries.length;
+        const summary = summaries.join('; ') + (remaining > 0 ? `; und ${remaining} weitere` : '');
+        document.getElementById('catalogMessage').innerText = 'Neue Programmversion verfügbar: ' + summary;
+        document.getElementById('catalogNotice').hidden = false;
+      }
+
+      document.getElementById('productStatusNotice').hidden = true;
+      updateSelectedProduct();
+      filterNav();
+    }
+
+    function renderInstallProgress(progress) {
+      if (progress.status === 'installed' && productReleases[progress.productId]) {
+        productReleases[progress.productId].installedVersion = progress.version;
+        productReleases[progress.productId].installed = true;
+        productReleases[progress.productId].updateAvailable = false;
+      }
+      if (progress.status === 'uninstalled' && productReleases[progress.productId]) {
+        productReleases[progress.productId].installedVersion = null;
+        productReleases[progress.productId].installed = false;
+        productReleases[progress.productId].updateAvailable = false;
+      }
+      if (progress.productId !== selectedProductId) return;
+
+      const progressDeck = document.getElementById('progDeck');
+      const percent = progress.percent || 0;
+      progressDeck.style.display = 'block';
+      document.getElementById('progNumber').innerText = percent + ' %';
+      document.getElementById('progBarFill').style.width = percent + '%';
+      document.querySelector('.progress-track').setAttribute('aria-valuenow', String(percent));
+
+      if (progress.status === 'downloading') {
+        document.getElementById('progTitle').innerText = 'Installationsdatei wird sicher geladen …';
+        document.getElementById('progSizeText').innerText = formatBytes(progress.receivedBytes) + ' / ' + formatBytes(progress.totalBytes);
+        document.getElementById('progSpeedText').innerText = 'Prüfsumme wird kontrolliert';
+      } else if (progress.status === 'installing') {
+        document.getElementById('progTitle').innerText = 'Installationsprogramm gestartet …';
+        document.getElementById('progSizeText').innerText = 'Download abgeschlossen';
+      } else if (progress.status === 'downloading-uninstaller') {
+        document.getElementById('progTitle').innerText = 'Mitgelieferten Deinstaller wird geprüft …';
+        document.getElementById('progSizeText').innerText = formatBytes(progress.receivedBytes) + ' / ' + formatBytes(progress.totalBytes);
+      } else if (progress.status === 'uninstalling') {
+        document.getElementById('progTitle').innerText = 'Deinstallation läuft …';
+        document.getElementById('progSizeText').innerText = 'Produkt-Deinstaller gestartet';
+      } else if (progress.status === 'uninstalled') {
+        document.getElementById('progTitle').innerText = 'Deinstallation abgeschlossen';
+        document.getElementById('progSizeText').innerText = 'Mitgelieferter Deinstaller wurde ausgeführt';
+        document.getElementById('progSpeedText').innerText = '';
+        document.getElementById('finishNote').innerText = 'Das Programm wurde deinstalliert.';
+        document.getElementById('finishNote').style.display = 'block';
+      } else if (progress.status === 'installed') {
+        document.getElementById('progTitle').innerText = 'Installation abgeschlossen';
+        document.getElementById('progSizeText').innerText = 'Datei geprüft und installiert';
+        document.getElementById('progSpeedText').innerText = '';
+        document.getElementById('finishNote').style.display = 'block';
+        document.getElementById('productStatusNotice').hidden = true;
+      } else if (progress.status === 'error') {
+        document.getElementById('progTitle').innerText = 'Installation fehlgeschlagen';
+        setNotice('productStatusNotice', 'productStatusMessage', progress.message, 'error');
+      }
+
+      if (progress.status === 'installed' || progress.status === 'uninstalled' || progress.status === 'error') {
+        installingProductId = null;
+        uninstallingProductId = null;
+        updateSelectedProduct();
+        if (progress.status === 'installed' || progress.status === 'uninstalled') {
+          document.getElementById('progDeck').style.display = 'block';
+          document.getElementById('progTitle').innerText = progress.status === 'installed'
+            ? 'Installation abgeschlossen'
+            : 'Deinstallation abgeschlossen';
+          document.getElementById('progSizeText').innerText = progress.status === 'installed'
+            ? 'Datei geprüft und installiert'
+            : 'Mitgelieferter Deinstaller wurde ausgeführt';
+          document.getElementById('progSpeedText').innerText = '';
+          document.getElementById('finishNote').innerText = progress.status === 'installed'
+            ? 'Der Installationsvorgang ist abgeschlossen.'
+            : 'Das Programm wurde deinstalliert.';
+          document.getElementById('finishNote').style.display = 'block';
+        }
+      }
+    }
+
+    async function startDownload() {
+      const button = document.getElementById('dlBtn');
+      if (button.disabled || !window.launcher) return;
+
+      installingProductId = selectedProductId;
+      updateSelectedProduct();
+      document.getElementById('progDeck').style.display = 'block';
+      document.getElementById('progTitle').innerText = 'Installation wird vorbereitet …';
+      document.getElementById('progSizeText').innerText = 'Verbindung zum Release-Server wird aufgebaut';
+      document.getElementById('progSpeedText').innerText = '';
+
+      try {
+        await window.launcher.installProduct(selectedProductId);
+      } catch (error) {
+        installingProductId = null;
+        setNotice('productStatusNotice', 'productStatusMessage', error.message, 'error');
+        updateSelectedProduct();
+      }
+    }
+
+    async function uninstallProduct() {
+      if (!selectedProductId || !productReleases[selectedProductId]?.installed) return;
+      if (!confirm('Möchtest du „' + productReleases[selectedProductId].name + '“ mit seinem mitgelieferten Deinstaller entfernen?')) return;
+
+      uninstallingProductId = selectedProductId;
+      installingProductId = selectedProductId;
+      updateSelectedProduct();
+      document.getElementById('progDeck').style.display = 'block';
+      document.getElementById('progTitle').innerText = 'Deinstallation wird vorbereitet …';
+      document.getElementById('progSizeText').innerText = 'Mitgelieferter Deinstaller wird sicher geladen';
+      try {
+        await window.launcher.uninstallProduct(selectedProductId);
+      } catch (error) {
+        installingProductId = null;
+        uninstallingProductId = null;
+        setNotice('productStatusNotice', 'productStatusMessage', error.message, 'error');
+        updateSelectedProduct();
+      }
+    }
+
+    async function handleAssistantUpdateAction() {
+      const action = document.getElementById('assistantUpdateAction').dataset.action;
+      try {
+        if (action === 'download') {
+          await window.launcher.downloadAssistantUpdate();
+        } else if (action === 'install' && confirm('Den Assistenten-Installer starten? Der Assistent wird dafür geschlossen.')) {
+          await window.launcher.installAssistantUpdate();
+        }
+      } catch (error) {
+        setAssistantUpdateStatus({ status: 'error', message: error.message });
+      }
+    }
+
+    async function checkForUpdates() {
+      const button = document.getElementById('checkUpdatesButton');
+      button.disabled = true;
+      try {
+        await Promise.all([
+          window.launcher.checkAssistantUpdate(),
+          window.launcher.refreshProductCatalog()
+        ]);
+      } catch (error) {
+        setNotice('productStatusNotice', 'productStatusMessage', 'Katalogprüfung fehlgeschlagen: ' + error.message, 'error');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function startLiveBuildMonitor() {
+      if (!location.hostname.endsWith('.github.io')) return;
+
+      const buildInfoUrl = new URL('build-info.json', location.href);
+      const currentBuild = new URLSearchParams(location.search).get('build');
+      try {
+        const pendingBuildNotice = sessionStorage.getItem('js-studio-live-build-notice');
+        if (pendingBuildNotice) {
+          sessionStorage.removeItem('js-studio-live-build-notice');
+          const notice = JSON.parse(pendingBuildNotice);
+          if (typeof notice.publishedAt === 'string' && typeof notice.change === 'string') {
+            const publishedAt = new Date(notice.publishedAt);
+            document.getElementById('liveBuildMessage').innerText =
+              'Neue Manager-Oberfläche veröffentlicht'
+              + (Number.isNaN(publishedAt.getTime()) ? '' : ' am ' + publishedAt.toLocaleString('de-DE'))
+              + ': ' + notice.change;
+            document.getElementById('liveBuildNotice').hidden = false;
+          }
+        }
+      } catch (error) {
+        console.warn('Die Veröffentlichungsnachricht konnte nicht wiederhergestellt werden:', error);
+      }
+
+      async function refreshPublishedBuild() {
+        try {
+          const response = await fetch(buildInfoUrl.toString() + '?_=' + Date.now(), { cache: 'no-store' });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const publishedBuild = await response.json();
+          if (typeof publishedBuild.commit !== 'string' || !/^[a-f0-9]{40}$/.test(publishedBuild.commit)) {
+            throw new Error('Die Veröffentlichungsinformationen enthalten keine gültige Commit-ID.');
+          }
+          if (publishedBuild.commit === currentBuild) return;
+
+          try {
+            sessionStorage.setItem('js-studio-live-build-notice', JSON.stringify({
+              publishedAt: publishedBuild.publishedAt,
+              change: publishedBuild.change
+            }));
+          } catch (error) {
+            console.warn('Die Veröffentlichungsnachricht konnte nicht gespeichert werden:', error);
+          }
+          const nextUrl = new URL(location.href);
+          nextUrl.searchParams.set('build', publishedBuild.commit);
+          location.replace(nextUrl.toString());
+        } catch (error) {
+          console.warn('Die Live-Version konnte noch nicht geprüft werden:', error);
+        }
+      }
+
+      void refreshPublishedBuild();
+      setInterval(() => void refreshPublishedBuild(), 60_000);
+    }
+
+    async function openReleaseConfig() {
+      if (!window.launcher) return;
+      try {
+        await window.launcher.openReleaseConfig();
+      } catch (error) {
+        alert(error.message);
+      }
+    }
+
+    async function uninstallApp() {
+      if (!confirm('Möchtest du den JS Studio Download Assistent wirklich von diesem PC deinstallieren?')) return;
+      try {
+        await window.launcher.uninstallAssistant();
+      } catch (error) {
+        alert(error.message);
+      }
+    }
+
+    if (window.launcher) {
+      window.launcher.onProductStatus(renderProductStatus);
+      window.launcher.onInstallProgress(renderInstallProgress);
+      window.launcher.onAssistantUpdate(setAssistantUpdateStatus);
+      document.getElementById('assistantUpdateAction').addEventListener('click', handleAssistantUpdateAction);
+      window.launcher.getInitialState().then((state) => {
+        document.getElementById('assistantVersion').innerText = 'Version ' + state.appVersion;
+        if (!state.productsConfigured) {
+          setNotice('productStatusNotice', 'productStatusMessage', 'Die Installationsquelle für Programme ist noch nicht eingerichtet.', '', true);
+        }
+      }).catch((error) => {
+        setNotice('productStatusNotice', 'productStatusMessage', 'Der Assistent konnte seine Einstellungen nicht laden: ' + error.message, 'error');
+      });
+    } else {
+      setNotice('productStatusNotice', 'productStatusMessage', 'Installationen sind nur im Desktop-Assistenten verfügbar.', 'error');
+    }
+
+    startLiveBuildMonitor();
+  </script>
+</body>
+</html>

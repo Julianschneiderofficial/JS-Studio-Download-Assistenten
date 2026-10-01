@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="tile" x1="18" y1="18" x2="236" y2="238" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5da5ff"/>
+      <stop offset=".48" stop-color="#3167df"/>
+      <stop offset="1" stop-color="#183889"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="60" y1="12" x2="190" y2="150" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff" stop-opacity=".24"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="2" y="4" width="252" height="260" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+  </defs>
+  <rect x="22" y="26" width="212" height="212" rx="48" fill="#132b60" filter="url(#shadow)"/>
+  <rect x="14" y="12" width="228" height="228" rx="50" fill="url(#tile)"/>
+  <path d="M64 12h128a50 50 0 0 1 50 50v43C175 101 112 72 44 64V32a20 20 0 0 1 20-20Z" fill="url(#shine)"/>
+  <path d="M78 82h57v73c0 17-12 29-30 29-13 0-24-6-31-17l20-17c3 5 7 8 12 8 6 0 9-4 9-11V104H78V82Z" fill="#fff"/>
+  <path d="M187 101c-8-12-19-18-35-18-21 0-35 12-35 30 0 17 11 25 35 33 13 4 17 7 17 13 0 7-6 11-16 11-12 0-21-5-29-15l-21 17c12 16 29 24 51 24 27 0 43-13 43-35 0-18-10-27-36-35-12-4-16-7-16-12 0-4 4-7 10-7 8 0 15 3 21 10l16-16Z" fill="#fff"/>
+</svg>
