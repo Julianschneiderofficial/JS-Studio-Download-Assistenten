@@ -35,23 +35,20 @@
           </span>
         </a>
         <div class="login-intro">
-          <p id="login-eyebrow" class="eyebrow">Willkommen zurück</p>
-          <h1 id="login-heading">Bei Ihrem Konto anmelden</h1>
-          <p id="login-description">Melden Sie sich an, um Ihre Firmenprogramme zu verwalten.</p>
+          <p class="eyebrow">Demo-Zugang</p>
+          <h1 id="login-heading">Willkommen bei JS Studio</h1>
+          <p id="login-description">Geben Sie beliebige Zugangsdaten ein, um die Demo zu öffnen.</p>
         </div>
+        <p class="login-demo-notice">Demo-Modus: Es findet keine Passwortprüfung statt.</p>
         <form id="login-form" class="form-stack">
           <label id="username-label" for="username">Benutzername</label>
           <input id="username" name="username" type="text" autocomplete="username" required>
           <label for="password">Passwort</label>
-          <input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required>
-          <div id="password-confirmation-group" class="hidden">
-            <label for="password-confirmation">Passwort wiederholen</label>
-            <input id="password-confirmation" name="passwordConfirmation" type="password" autocomplete="new-password" minlength="8">
-          </div>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
           <p id="login-error" class="form-message" role="status" aria-live="polite"></p>
           <button id="login-submit" class="button button-primary button-wide" type="submit">Anmelden</button>
         </form>
-        <p id="login-footnote" class="login-footnote">Lokales Demo-Konto – keine Unternehmensauthentifizierung</p>
+        <p id="login-footnote" class="login-footnote">Admin/Admin oder beliebige nichtleere Zugangsdaten</p>
       </section>
       <div class="login-orb login-orb-one" aria-hidden="true"></div>
       <div class="login-orb login-orb-two" aria-hidden="true"></div>

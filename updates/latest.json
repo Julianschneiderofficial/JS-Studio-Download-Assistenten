@@ -1,13 +1,13 @@
 {
-  "version": "1.0.3",
+  "version": "1.0.4",
   "changelog": [
-    "Komplettes kompaktes Deep-Dark-Redesign mit kontrastreicher Studio-Blau- und Cyan-Farbwelt.",
-    "Verdichtete Typografie, Abstaende, Karten, Navigation, Formulare und Dialoge."
+    "Demo-Anmeldung akzeptiert beliebige nichtleere Zugangsdaten einschließlich admin/admin.",
+    "Login bleibt im Deep-Dark-Design und kennzeichnet den nicht authentifizierten Demo-Modus."
   ],
   "files": {
-    "index.html": "0ee8e7489674feda06bc12f9bef5f3c262a6da1c738f7c0d059af4547b17d3d5",
-    "styles.css": "fb98401a308c127d14855069c902332a5dc03f2d87d30c6ee1903c9b211abe94",
-    "src/app.js": "9d6dcc7f6d62d00a6ef37532884ee09e02bbb9e459491d75bc1ec762f92d4ad1",
+    "index.html": "e9173fbf2805a6548e0336a4a1672f5a49979eae7586e1d35e492b6a5834fd79",
+    "styles.css": "bc2a735d209ffa8e81c6c42bc441dc86038dc4add58f2e3aeb6edfd565c15c97",
+    "src/app.js": "c173d79969a97d35ea92369ce14d7eb518c27c48d14ee33ca370e66dfa437daf",
     "catalog.json": "3bb07e49e17afa28d691a7ee2f6c8137eab7a4b2ad03f23e0459239fe54c9a98"
   }
 }

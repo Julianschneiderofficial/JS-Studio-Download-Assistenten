@@ -1,9 +1,7 @@
 const { app, BrowserWindow, dialog, ipcMain } = require("electron");
-const { randomBytes, scrypt: scryptCallback, timingSafeEqual } = require("node:crypto");
 const { access, readFile, rename, writeFile } = require("node:fs/promises");
 const { spawn } = require("node:child_process");
 const path = require("node:path");
-const { promisify } = require("node:util");
 const {
   checkForUpdates,
   flushPendingEvents,
@@ -20,7 +18,6 @@ const DEFAULT_SETTINGS = {
   automaticUpdates: true
 };
 
-const scrypt = promisify(scryptCallback);
 let mainWindow;
 
 function isTrustedRenderer(event) {
@@ -63,10 +60,6 @@ async function loadSettings() {
   }
 }
 
-function authFilePath() {
-  return path.join(app.getPath("userData"), "demo-auth.json");
-}
-
 function validateCredentials(credentials) {
   if (
     !credentials
@@ -74,10 +67,9 @@ function validateCredentials(credentials) {
     || typeof credentials.password !== "string"
     || credentials.username.trim().length < 1
     || credentials.username.trim().length > 100
-    || credentials.password.length < 8
     || credentials.password.length > 1024
   ) {
-    throw new TypeError("Bitte geben Sie einen Benutzernamen und ein Passwort mit mindestens 8 Zeichen ein.");
+    throw new TypeError("Bitte geben Sie einen Benutzernamen und ein Passwort ein.");
   }
 
   return {
@@ -86,80 +78,16 @@ function validateCredentials(credentials) {
   };
 }
 
-async function readDemoAccount() {
-  try {
-    const account = JSON.parse(await readFile(authFilePath(), "utf8"));
-    if (
-      typeof account.username !== "string"
-      || account.username.trim().length < 1
-      || account.username.length > 100
-      || typeof account.salt !== "string"
-      || typeof account.passwordHash !== "string"
-      || !/^[a-f0-9]{32}$/.test(account.salt)
-      || !/^[a-f0-9]{128}$/.test(account.passwordHash)
-    ) {
-      throw new Error("Die lokale Demo-Kontodatei ist beschädigt.");
-    }
-    return account;
-  } catch (error) {
-    if (error.code === "ENOENT") {
-      return null;
-    }
-    throw error;
-  }
-}
-
-ipcMain.handle("auth:status", async (event) => {
-  if (!isTrustedRenderer(event)) {
-    throw new Error("Nicht autorisierte IPC-Anfrage.");
-  }
-  const account = await readDemoAccount();
-  return { configured: account !== null };
-});
-
-ipcMain.handle("auth:setup", async (event, credentials) => {
+ipcMain.handle("auth:login", (event, credentials) => {
   if (!isTrustedRenderer(event)) {
     throw new Error("Nicht autorisierte IPC-Anfrage.");
   }
 
   const validated = validateCredentials(credentials);
-  const salt = randomBytes(16);
-  const passwordHash = await scrypt(validated.password, salt, 64);
-  try {
-    await writeFile(authFilePath(), JSON.stringify({
-      username: validated.username,
-      salt: salt.toString("hex"),
-      passwordHash: passwordHash.toString("hex")
-    }), { encoding: "utf8", flag: "wx", mode: 0o600 });
-  } catch (error) {
-    if (error.code === "EEXIST") {
-      throw new Error("Ein Demo-Konto ist bereits eingerichtet. Bitte melden Sie sich an.");
-    }
-    throw error;
-  }
-
-  return { authenticated: true, username: validated.username };
-});
-
-ipcMain.handle("auth:login", async (event, credentials) => {
-  if (!isTrustedRenderer(event)) {
-    throw new Error("Nicht autorisierte IPC-Anfrage.");
-  }
-
-  const validated = validateCredentials(credentials);
-  const account = await readDemoAccount();
-  if (!account) {
-    throw new Error("Bitte richten Sie zuerst Ihr lokales Demo-Konto ein.");
-  }
-
-  const salt = Buffer.from(account.salt, "hex");
-  const expectedHash = Buffer.from(account.passwordHash, "hex");
-  const actualHash = await scrypt(validated.password, salt, expectedHash.length);
   return {
-    authenticated:
-      validated.username.toLocaleLowerCase() === account.username.toLocaleLowerCase()
-      && timingSafeEqual(actualHash, expectedHash),
-    username: account.username
+    // Deliberately unauthenticated: this is a local demo application.
+    authenticated: true,
+    username: validated.username
   };
 });
 

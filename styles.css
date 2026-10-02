@@ -226,6 +226,17 @@ p {
   margin-bottom: 0;
 }
 
+.login-demo-notice {
+  margin: -8px 0 17px;
+  padding: 8px 10px;
+  border: 1px solid #4a3b20;
+  border-radius: 7px;
+  background: #241e14;
+  color: #facc68;
+  font-size: 10px;
+  text-align: center;
+}
+
 .form-stack {
   display: flex;
   flex-direction: column;

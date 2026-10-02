@@ -3,8 +3,12 @@ const { createHash } = require("node:crypto");
 const { mkdir, readFile, rename, rm, writeFile } = require("node:fs/promises");
 const path = require("node:path");
 
-const CORE_MANIFEST_URL = "https://raw.githubusercontent.com/Julianschneiderofficial/JS-Studio-Download-Assistenten/main/updates/latest.json";
-const CORE_CONTENT_BASE_URL = "https://raw.githubusercontent.com/Julianschneiderofficial/JS-Studio-Download-Assistenten/main/";
+const CORE_OWNER = "Julianschneiderofficial";
+const CORE_REPOSITORY = "JS-Studio-Download-Assistenten";
+const CORE_BRANCH = "main";
+const CORE_CONTENT_BASE_URL =
+  `https://raw.githubusercontent.com/${CORE_OWNER}/${CORE_REPOSITORY}/${CORE_BRANCH}/`;
+const CORE_MANIFEST_URL = new URL("updates/latest.json", CORE_CONTENT_BASE_URL).href;
 const CORE_FILES = ["index.html", "styles.css", "src/app.js", "catalog.json"];
 const MAX_FILE_SIZE = 2 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 15000;
