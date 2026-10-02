@@ -1,4 +1,4 @@
-﻿const { app } = require("electron");
+const { app } = require("electron");
 const { createHash } = require("node:crypto");
 const { mkdir, readFile, rename, rm, writeFile } = require("node:fs/promises");
 const path = require("node:path");
@@ -86,7 +86,7 @@ async function fetchBytes(url, maxBytes) {
 
   const declaredLength = Number(response.headers.get("content-length"));
   if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
-    throw new Error("Remote-Datei Ã¼berschreitet die erlaubte GrÃ¶ÃŸe.");
+    throw new Error("Remote-Datei überschreitet die erlaubte Größe.");
   }
 
   const reader = response.body.getReader();
@@ -100,7 +100,7 @@ async function fetchBytes(url, maxBytes) {
     totalBytes += value.byteLength;
     if (totalBytes > maxBytes) {
       await reader.cancel();
-      throw new Error("Remote-Datei Ã¼berschreitet die erlaubte GrÃ¶ÃŸe.");
+      throw new Error("Remote-Datei überschreitet die erlaubte Größe.");
     }
     chunks.push(Buffer.from(value));
   }

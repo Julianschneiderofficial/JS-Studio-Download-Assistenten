@@ -1,9 +1,9 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="de">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#0d0f12">
+    <meta name="theme-color" content="#ffffff">
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self';"
@@ -19,9 +19,9 @@
         <span>JS Studio Download-Assistent</span>
       </div>
       <div class="window-controls" aria-label="Fenstersteuerung">
-        <button id="window-minimize" type="button" aria-label="Minimieren" title="Minimieren">âˆ’</button>
-        <button id="window-maximize" type="button" aria-label="Maximieren" title="Maximieren">â–¡</button>
-        <button id="window-close" class="window-close" type="button" aria-label="SchlieÃŸen" title="SchlieÃŸen">Ã—</button>
+        <button id="window-minimize" type="button" aria-label="Minimieren" title="Minimieren">−</button>
+        <button id="window-maximize" type="button" aria-label="Maximieren" title="Maximieren">□</button>
+        <button id="window-close" class="window-close" type="button" aria-label="Schließen" title="Schließen">×</button>
       </div>
     </header>
 
@@ -37,9 +37,9 @@
         <div class="login-intro">
           <p class="eyebrow">Demo-Zugang</p>
           <h1 id="login-heading">Willkommen bei JS Studio</h1>
-          <p id="login-description">Geben Sie beliebige Zugangsdaten ein, um die Demo zu Ã¶ffnen.</p>
+          <p id="login-description">Geben Sie beliebige Zugangsdaten ein, um die Demo zu öffnen.</p>
         </div>
-        <p class="login-demo-notice">Demo-Modus: Es findet keine PasswortprÃ¼fung statt.</p>
+        <p class="login-demo-notice">Demo-Modus: Es findet keine Passwortprüfung statt.</p>
         <form id="login-form" class="form-stack">
           <label id="username-label" for="username">Benutzername</label>
           <input id="username" name="username" type="text" autocomplete="username" required>
@@ -54,8 +54,6 @@
         </form>
         <p id="login-footnote" class="login-footnote">Admin/Admin oder beliebige nichtleere Zugangsdaten</p>
       </section>
-      <div class="login-orb login-orb-one" aria-hidden="true"></div>
-      <div class="login-orb login-orb-two" aria-hidden="true"></div>
     </main>
 
     <div id="app-shell" class="app-shell hidden">
@@ -70,15 +68,15 @@
         <div class="sidebar-label">Arbeitsbereich</div>
         <nav class="primary-nav" aria-label="Hauptnavigation">
           <button class="nav-link is-active" type="button" data-page="dashboard">
-            <span class="nav-icon" aria-hidden="true">âŒ‚</span>
-            Ãœbersicht
+            <span class="nav-icon" aria-hidden="true">⌂</span>
+            Übersicht
           </button>
           <button class="nav-link" type="button" data-page="programs">
-            <span class="nav-icon" aria-hidden="true">â–¦</span>
+            <span class="nav-icon" aria-hidden="true">▦</span>
             Programme
           </button>
           <button class="nav-link" type="button" data-page="settings">
-            <span class="nav-icon" aria-hidden="true">âš™</span>
+            <span class="nav-icon" aria-hidden="true">⚙</span>
             Einstellungen
           </button>
         </nav>
@@ -91,7 +89,7 @@
             </div>
           </div>
           <button id="logout-button" class="nav-link logout-link" type="button">
-            <span class="nav-icon" aria-hidden="true">â†ª</span>
+            <span class="nav-icon" aria-hidden="true">↪</span>
             Abmelden
           </button>
         </div>
@@ -102,7 +100,7 @@
           <div>
             <span class="topbar-kicker">JS Studio</span>
             <span class="topbar-divider">/</span>
-            <span id="breadcrumb-current">Ãœbersicht</span>
+            <span id="breadcrumb-current">Übersicht</span>
           </div>
           <div class="profile-chip">
             <span id="profile-initials" class="avatar">JS</span>
@@ -115,37 +113,32 @@
             <div class="welcome-row">
               <div>
                 <p class="eyebrow">Ihr Arbeitsplatz, zentral verwaltet</p>
-                <h1>Guten Tag<span class="blue-period">.</span></h1>
+                <h1>Guten Tag</h1>
                 <p class="muted">Installieren und verwalten Sie Ihre Firmenprogramme an einem Ort.</p>
-              </div>
-              <div class="welcome-art" aria-hidden="true">
-                <span class="art-ring art-ring-back"></span>
-                <span class="art-ring art-ring-front"></span>
-                <span class="art-spark">âœ¦</span>
               </div>
             </div>
 
             <div class="summary-grid">
               <article class="summary-card glass-panel">
-                <span class="summary-icon icon-blue" aria-hidden="true">â–¦</span>
-                <div><span>EintrÃ¤ge im Katalog</span><strong id="program-count">00</strong></div>
+                <span class="summary-icon icon-blue" aria-hidden="true">▦</span>
+                <div><span>Einträge im Katalog</span><strong id="program-count">00</strong></div>
               </article>
               <article class="summary-card glass-panel">
-                <span class="summary-icon icon-green" aria-hidden="true">âœ“</span>
+                <span class="summary-icon icon-green" aria-hidden="true">✓</span>
                 <div><span>Installiert</span><strong id="installed-count">00</strong></div>
               </article>
               <article class="summary-card glass-panel">
-                <span class="summary-icon icon-violet" aria-hidden="true">â†»</span>
-                <div><span>VerfÃ¼gbare Updates</span><strong>00</strong></div>
+                <span class="summary-icon icon-violet" aria-hidden="true">↻</span>
+                <div><span>Verfügbare Updates</span><strong>00</strong></div>
               </article>
             </div>
 
             <div class="section-heading">
               <div>
-                <p class="eyebrow">FÃ¼r Ihr Team</p>
+                <p class="eyebrow">Für Ihr Team</p>
                 <h2>Empfohlene Programme</h2>
               </div>
-              <button class="text-button" type="button" data-page="programs">Alle Programme <span aria-hidden="true">â†’</span></button>
+              <button class="text-button" type="button" data-page="programs">Alle Programme <span aria-hidden="true">→</span></button>
             </div>
             <div id="featured-programs" class="program-grid"></div>
           </section>
@@ -161,23 +154,23 @@
 
           <section id="page-settings" class="page-section hidden">
             <div class="page-heading">
-              <p class="eyebrow">PersÃ¶nlich anpassen</p>
+              <p class="eyebrow">Persönlich anpassen</p>
               <h1>Einstellungen</h1>
               <p class="muted">Verwalten Sie Download- und Updateoptionen.</p>
             </div>
             <form id="settings-form" class="settings-card glass-panel">
               <div class="settings-section">
                 <h2>Download-Ordner</h2>
-                <p>Speicherort fÃ¼r heruntergeladene Installationsdateien.</p>
+                <p>Speicherort für heruntergeladene Installationsdateien.</p>
                 <div class="path-field">
                   <input id="download-directory" name="downloadDirectory" type="text" placeholder="Standardordner verwenden">
-                  <button id="choose-directory" class="button button-secondary" type="button">Ordner wÃ¤hlen</button>
+                  <button id="choose-directory" class="button button-secondary" type="button">Ordner wählen</button>
                 </div>
               </div>
               <div class="settings-section settings-row">
                 <div>
                   <h2>Updates automatisch installieren</h2>
-                  <p>VerfÃ¼gbare Assistenten-Updates im Hintergrund herunterladen.</p>
+                  <p>Verfügbare Assistenten-Updates im Hintergrund herunterladen.</p>
                 </div>
                 <label class="switch" for="automatic-updates">
                   <input id="automatic-updates" name="automaticUpdates" type="checkbox">
@@ -194,7 +187,7 @@
             <section class="danger-zone" aria-labelledby="uninstall-heading">
               <div>
                 <h2 id="uninstall-heading">Download-Assistent entfernen</h2>
-                <p>Startet das Windows-Deinstallationsprogramm. Diese Aktion kann nicht rÃ¼ckgÃ¤ngig gemacht werden.</p>
+                <p>Startet das Windows-Deinstallationsprogramm. Diese Aktion kann nicht rückgängig gemacht werden.</p>
               </div>
               <button id="uninstall-assistant" class="button danger-button" type="button">
                 <span aria-hidden="true">!</span>
@@ -208,11 +201,11 @@
 
     <dialog id="release-notes-dialog" class="release-dialog">
       <form method="dialog">
-        <button class="dialog-close" aria-label="SchlieÃŸen">Ã—</button>
+        <button class="dialog-close" aria-label="Schließen">×</button>
       </form>
       <p class="eyebrow">Core-Update installiert</p>
       <h2>Was ist neu?</h2>
-      <p class="muted">Die App wurde aktualisiert und lÃ¤uft ohne erneute Installation weiter.</p>
+      <p class="muted">Die App wurde aktualisiert und läuft ohne erneute Installation weiter.</p>
       <div id="release-notes-content" class="release-notes-content"></div>
       <form method="dialog">
         <button class="button button-primary" autofocus>Verstanden</button>
