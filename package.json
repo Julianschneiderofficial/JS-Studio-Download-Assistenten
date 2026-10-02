@@ -1,64 +1,49 @@
 {
   "name": "js-studio-download-assistent",
-  "version": "1.0.3",
-  "description": "JS Studio Download Assistent",
-  "author": "JS Studio",
-  "license": "UNLICENSED",
-  "homepage": "https://github.com/Julianschneiderofficial/js-studio-download-assistent",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Julianschneiderofficial/js-studio-download-assistent.git"
-  },
+  "version": "1.0.0",
+  "private": true,
+  "description": "Download-Assistent fuer JS Studio Firmenprogramme",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "generate:icon": "node scripts/generate-icon.js",
-    "prestart": "npm run generate:icon",
-    "dist": "electron-builder --win nsis",
-    "predist": "npm run generate:icon",
-    "release:check": "node scripts/check-release-version.js",
-    "live:publish": "node scripts/live-publish.js",
-    "test": "node --test"
+    "build": "electron-builder",
+    "build:win": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^44.5.1",
+    "electron-builder": "^26.0.12"
   },
   "build": {
-    "appId": "com.jsstudio.downloader",
-    "productName": "JS Studio Download Assistent",
-    "copyright": "Copyright © 2026 JS Studio",
-    "artifactName": "JS-Studio-Download-Assistent-Setup-${version}.${ext}",
+    "appId": "de.jsstudio.downloadassistant",
+    "productName": "JS Studio Download-Assistent",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false
+    },
     "publish": [
       {
         "provider": "github",
         "owner": "Julianschneiderofficial",
-        "repo": "js-studio-download-assistent",
+        "repo": "JS-Studio-Download-Assistenten",
         "releaseType": "release"
       }
-    ],
-    "win": {
-      "icon": "build/icon.ico",
-      "executableName": "JS Studio Download Assistent",
-      "requestedExecutionLevel": "asInvoker",
-      "target": "nsis"
-    },
-    "extraResources": [
-      {
-        "from": "release-config.json",
-        "to": "release-config.json"
-      }
-    ],
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "uninstallDisplayName": "JS Studio Download Assistent",
-      "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico",
-      "installerHeaderIcon": "build/icon.ico",
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "JS Studio Download Assistent"
-    }
-  },
-  "devDependencies": {
-    "electron": "^44.5.1",
-    "electron-builder": "^26.15.3"
+    ]
   }
 }

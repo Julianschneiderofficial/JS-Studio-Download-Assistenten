@@ -1,0 +1,13 @@
+{
+  "version": "1.0.1",
+  "changelog": [
+    "Der App-Core wird direkt aus dem GitHub-Repository aktualisiert.",
+    "Der Programm- und VST-Katalog wird dynamisch aus catalog.json geladen."
+  ],
+  "files": {
+    "index.html": "1199ce4ee6b9bab4174f81c44f4720d1644d096c152eb91b37846a6468af125d",
+    "styles.css": "a8f6f46395c970cc53465e147ce3b82a1932613f270a22eb8542934c6131c1f2",
+    "src/app.js": "cbf12de0da863d88c89510e7484aac363d83d87348b20adb834522085b26ed1a",
+    "catalog.json": "3bb07e49e17afa28d691a7ee2f6c8137eab7a4b2ad03f23e0459239fe54c9a98"
+  }
+}

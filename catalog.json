@@ -1,0 +1,22 @@
+[
+  {
+    "id": "js-studio-office",
+    "name": "JS Studio Office Suite",
+    "description": "Die zentrale Werkzeugsammlung für Ihren Arbeitsalltag.",
+    "version": "1.0.0",
+    "type": "program",
+    "status": "Platzhalter",
+    "logo": "JS",
+    "installable": false
+  },
+  {
+    "id": "studio-reverb",
+    "name": "Studio Reverb",
+    "description": "Beispielplatzhalter für ein VST-Plugin im dynamischen Katalog.",
+    "version": "1.0.0",
+    "type": "vst",
+    "status": "Platzhalter",
+    "logo": "VST",
+    "installable": false
+  }
+]

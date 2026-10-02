@@ -1,582 +1,258 @@
-const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
-const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
-const { spawn } = require('child_process');
-const { pathToFileURL } = require('url');
+const { app, BrowserWindow, dialog, ipcMain } = require("electron");
+const { access, readFile, rename, writeFile } = require("node:fs/promises");
+const { spawn } = require("node:child_process");
+const path = require("node:path");
 const {
-  compareVersions,
-  downloadVerifiedInstaller,
-  fetchLatestAssistantRelease,
-  fetchProductManifest,
-  getChangedProducts,
-  getNewProducts,
-  getProductManifestUrl,
-  validateProductId,
-  validateReleaseConfig
-} = require('./release-service');
+  checkForUpdates,
+  flushPendingEvents,
+  getActiveCoreVersion,
+  getActiveCoreDirectory,
+  initializeReleaseService,
+  loadCachedCore,
+  resolveUiEntry
+} = require("./services/release-service");
+const { assertInstallable, listPrograms } = require("./services/program-service");
 
-const INSTALLED_STATE_FILE = 'installed-products.json';
-const CATALOG_STATE_FILE = 'catalog-products.json';
-const CATALOG_REFRESH_INTERVAL_MS = 60_000;
-const activeInstalls = new Set();
+const DEFAULT_SETTINGS = {
+  downloadDirectory: "",
+  automaticUpdates: true
+};
 
 let mainWindow;
-let releaseConfig;
-let releaseConfigPath;
-let installedProducts = {};
-let knownCatalogVersions;
-let isRefreshingCatalog = false;
-let assistantUpdateRelease;
-let downloadedAssistantInstaller;
-let isCheckingAssistantUpdate = false;
-let catalogRefreshTimer;
-const rendererUrl = pathToFileURL(path.join(__dirname, 'index.html')).href;
 
-app.setName('JS Studio Download Assistent');
-app.setAppUserModelId('com.jsstudio.downloader');
-
-function getHostedRendererUrl() {
-  const owner = releaseConfig.github.owner.toLowerCase();
-  const repository = releaseConfig.github.repository;
-  return `https://${owner}.github.io/${encodeURIComponent(repository)}/index.html`;
+function isTrustedRenderer(event) {
+  return mainWindow
+    && event.sender === mainWindow.webContents
+    && event.senderFrame === mainWindow.webContents.mainFrame;
 }
 
-function isTrustedRendererUrl(value) {
-  if (value === rendererUrl) return true;
-  if (!app.isPackaged || !releaseConfig) return false;
-
-  try {
-    const parsed = new URL(value);
-    const expected = new URL(getHostedRendererUrl());
-    return parsed.protocol === 'https:'
-      && parsed.origin === expected.origin
-      && parsed.pathname === expected.pathname
-      && !parsed.username
-      && !parsed.password;
-  } catch {
-    return false;
-  }
-}
-
-function sendToWindow(channel, payload) {
-  if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isDestroyed()) {
-    mainWindow.webContents.send(channel, payload);
-  }
-}
-
-function assertTrustedRenderer(event) {
-  if (event.sender !== mainWindow?.webContents || !isTrustedRendererUrl(event.senderFrame?.url || '')) {
-    throw new Error('Diese Aktion ist nur über die Launcher-Oberfläche verfügbar.');
-  }
-}
-
-function getBundledConfigPath() {
-  return app.isPackaged
-    ? path.join(process.resourcesPath, 'release-config.json')
-    : path.join(__dirname, 'release-config.json');
-}
-
-async function loadReleaseConfig() {
-  const userDataPath = app.getPath('userData');
-  await fs.promises.mkdir(userDataPath, { recursive: true });
-  releaseConfigPath = path.join(userDataPath, 'release-config.json');
-
-  try {
-    await fs.promises.access(releaseConfigPath, fs.constants.R_OK);
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
-    await fs.promises.copyFile(getBundledConfigPath(), releaseConfigPath, fs.constants.COPYFILE_EXCL);
-  }
-
-  let source = await fs.promises.readFile(releaseConfigPath, 'utf8');
-  let parsed;
-  try {
-    parsed = JSON.parse(source);
-  } catch (error) {
-    throw new Error(`Die Release-Konfiguration ist kein gültiges JSON: ${error.message}`);
-  }
-
+function validateSettings(settings) {
   if (
-    parsed &&
-    typeof parsed === 'object' &&
-    parsed.schemaVersion === undefined &&
-    typeof parsed.productsManifestUrl === 'string' &&
-    typeof parsed.assistantUpdateUrl === 'string'
+    !settings
+    || typeof settings !== "object"
+    || Array.isArray(settings)
+    || typeof settings.downloadDirectory !== "string"
+    || settings.downloadDirectory.length > 32768
+    || typeof settings.automaticUpdates !== "boolean"
   ) {
-    if (parsed.productsManifestUrl || parsed.assistantUpdateUrl) {
-      throw new Error(
-        `Die vorhandene Release-Konfiguration verwendet noch einen alten Server. Sichere sie und ersetze ${releaseConfigPath} mit der GitHub-Konfiguration aus dem Programmpaket.`
-      );
-    }
-
-    const legacyPath = `${releaseConfigPath}.legacy`;
-    try {
-      await fs.promises.access(legacyPath, fs.constants.F_OK);
-      throw new Error(`Die alte Konfiguration wurde bereits unter ${legacyPath} gesichert.`);
-    } catch (error) {
-      if (error.code !== 'ENOENT') throw error;
-    }
-    await fs.promises.rename(releaseConfigPath, legacyPath);
-    await fs.promises.copyFile(getBundledConfigPath(), releaseConfigPath, fs.constants.COPYFILE_EXCL);
-    source = await fs.promises.readFile(releaseConfigPath, 'utf8');
-    parsed = JSON.parse(source);
+    throw new TypeError("Die Einstellungen haben ein ungültiges Format.");
   }
 
-  return validateReleaseConfig(parsed);
+  return {
+    downloadDirectory: settings.downloadDirectory.trim(),
+    automaticUpdates: settings.automaticUpdates
+  };
 }
 
-function getInstalledStatePath() {
-  return path.join(app.getPath('userData'), INSTALLED_STATE_FILE);
+function settingsFilePath() {
+  return path.join(app.getPath("userData"), "settings.json");
 }
 
-function getCatalogStatePath() {
-  return path.join(app.getPath('userData'), CATALOG_STATE_FILE);
-}
-
-async function loadInstalledProducts() {
-  const statePath = getInstalledStatePath();
-  let source;
+async function loadSettings() {
   try {
-    source = await fs.promises.readFile(statePath, 'utf8');
+    const contents = await readFile(settingsFilePath(), "utf8");
+    return validateSettings(JSON.parse(contents));
   } catch (error) {
-    if (error.code === 'ENOENT') return {};
+    if (error.code === "ENOENT") {
+      return { ...DEFAULT_SETTINGS };
+    }
     throw error;
   }
+}
 
-  let parsed;
-  try {
-    parsed = JSON.parse(source);
-  } catch (error) {
-    throw new Error(`Der lokale Installationsstatus ist ungültig: ${error.message}`);
+ipcMain.handle("auth:login", (event, credentials) => {
+  if (!isTrustedRenderer(event)) {
+    throw new Error("Nicht autorisierte IPC-Anfrage.");
+  }
+  if (
+    !credentials
+    || typeof credentials.username !== "string"
+    || typeof credentials.password !== "string"
+  ) {
+    throw new TypeError("Bitte geben Sie Benutzername und Passwort ein.");
   }
 
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('Der lokale Installationsstatus hat ein ungültiges Format.');
+  const expectedUsername = process.env.JS_STUDIO_DEMO_USERNAME;
+  const expectedPassword = process.env.JS_STUDIO_DEMO_PASSWORD;
+  if (!expectedUsername || !expectedPassword) {
+    throw new Error("Demo-Anmeldung nicht konfiguriert. Setzen Sie JS_STUDIO_DEMO_USERNAME und JS_STUDIO_DEMO_PASSWORD.");
   }
 
-  const installed = {};
-  for (const [id, savedProduct] of Object.entries(parsed)) {
-    const product = typeof savedProduct === 'string'
-      ? { version: savedProduct, uninstaller: null }
-      : savedProduct;
-    if (
-      !validateProductId(id) ||
-      !product ||
-      typeof product !== 'object' ||
-      typeof product.version !== 'string' ||
-      !/^\d+\.\d+\.\d+$/.test(product.version) ||
-      (product.uninstaller !== null && (
-        !product.uninstaller ||
-        typeof product.uninstaller !== 'object' ||
-        typeof product.uninstaller.downloadUrl !== 'string' ||
-        !Number.isSafeInteger(product.uninstaller.sizeBytes) ||
-        product.uninstaller.sizeBytes < 1 ||
-        typeof product.uninstaller.sha256 !== 'string' ||
-        !/^[a-f0-9]{64}$/i.test(product.uninstaller.sha256)
-      ))
-    ) {
-      throw new Error(`Ungültiger lokaler Installationsstatus für ${id}.`);
+  return {
+    authenticated:
+      credentials.username === expectedUsername
+      && credentials.password === expectedPassword,
+    username: credentials.username
+  };
+});
+
+ipcMain.handle("settings:load", async (event) => {
+  if (!isTrustedRenderer(event)) {
+    throw new Error("Nicht autorisierte IPC-Anfrage.");
+  }
+  return loadSettings();
+});
+
+ipcMain.handle("settings:save", async (event, settings) => {
+  if (!isTrustedRenderer(event)) {
+    throw new Error("Nicht autorisierte IPC-Anfrage.");
+  }
+
+  const validatedSettings = validateSettings(settings);
+  const targetPath = settingsFilePath();
+  const temporaryPath = `${targetPath}.${process.pid}.tmp`;
+  await writeFile(temporaryPath, JSON.stringify(validatedSettings, null, 2), "utf8");
+  await rename(temporaryPath, targetPath);
+  return validatedSettings;
+});
+
+ipcMain.handle("settings:choose-directory", async (event) => {
+  if (!isTrustedRenderer(event)) {
+    throw new Error("Nicht autorisierte IPC-Anfrage.");
+  }
+  if (!mainWindow) {
+    throw new Error("Das Anwendungsfenster ist nicht verfügbar.");
+  }
+
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ["openDirectory", "createDirectory"]
+  });
+  return result.canceled ? null : result.filePaths[0];
+});
+
+ipcMain.handle("updater:check", async (event) => {
+  if (!isTrustedRenderer(event)) {
+    throw new Error("Nicht autorisierte IPC-Anfrage.");
+  }
+  return checkForUpdates();
+});
+
+ipcMain.handle("core:version", async (event) => {
+  if (!isTrustedRenderer(event)) {
+    throw new Error("Nicht autorisierte IPC-Anfrage.");
+  }
+  return getActiveCoreVersion();
+});
+
+ipcMain.handle("window:minimize", (event) => {
+  if (!isTrustedRenderer(event) || !mainWindow) {
+    throw new Error("Nicht autorisierte IPC-Anfrage.");
+  }
+  mainWindow.minimize();
+});
+
+ipcMain.handle("window:toggle-maximize", (event) => {
+  if (!isTrustedRenderer(event) || !mainWindow) {
+    throw new Error("Nicht autorisierte IPC-Anfrage.");
+  }
+  if (mainWindow.isMaximized()) {
+    mainWindow.unmaximize();
+  } else {
+    mainWindow.maximize();
+  }
+  return mainWindow.isMaximized();
+});
+
+ipcMain.handle("window:close", (event) => {
+  if (!isTrustedRenderer(event) || !mainWindow) {
+    throw new Error("Nicht autorisierte IPC-Anfrage.");
+  }
+  mainWindow.close();
+});
+
+ipcMain.handle("programs:list", async (event) => {
+  if (!isTrustedRenderer(event)) {
+    throw new Error("Nicht autorisierte IPC-Anfrage.");
+  }
+  return listPrograms(getActiveCoreDirectory());
+});
+
+for (const action of ["install", "update", "uninstall"]) {
+  ipcMain.handle(`programs:${action}`, async (event, programId) => {
+    if (!isTrustedRenderer(event)) {
+      throw new Error("Nicht autorisierte IPC-Anfrage.");
     }
-    installed[id] = product;
-  }
-
-  return installed;
+    const catalog = await listPrograms(getActiveCoreDirectory());
+    return assertInstallable(programId, catalog);
+  });
 }
 
-async function loadKnownProductIds() {
-  let source;
-  try {
-    source = await fs.promises.readFile(getCatalogStatePath(), 'utf8');
-  } catch (error) {
-    if (error.code === 'ENOENT') return null;
-    throw error;
+ipcMain.handle("assistant:uninstall", async (event) => {
+  if (!isTrustedRenderer(event)) {
+    throw new Error("Nicht autorisierte IPC-Anfrage.");
+  }
+  if (!app.isPackaged || process.platform !== "win32") {
+    throw new Error("Die Deinstallation ist nur in einer installierten Windows-Version verfügbar.");
   }
 
-  let parsed;
-  try {
-    parsed = JSON.parse(source);
-  } catch (error) {
-    throw new Error(`Der lokale Katalogstatus ist ungültig: ${error.message}`);
-  }
+  const uninstallerPath = path.join(
+    path.dirname(process.execPath),
+    "Uninstall JS Studio Download-Assistent.exe"
+  );
+  await access(uninstallerPath);
 
-  if (Array.isArray(parsed)) {
-    return Object.fromEntries(parsed.map((id) => {
-      if (!validateProductId(id)) throw new Error(`Ungültige Produkt-ID im lokalen Katalogstatus: ${id}`);
-      return [id, null];
-    }));
-  }
-  if (!parsed || typeof parsed !== 'object') {
-    throw new Error('Der lokale Katalogstatus hat ein ungültiges Format.');
-  }
-  for (const [id, version] of Object.entries(parsed)) {
-    if (!validateProductId(id) || (version !== null && (typeof version !== 'string' || !/^\d+\.\d+\.\d+$/.test(version)))) {
-      throw new Error(`Ungültiger Katalogstatus für ${id}.`);
-    }
-  }
-  return parsed;
-}
-
-async function saveInstalledProducts() {
-  const statePath = getInstalledStatePath();
-  const temporaryPath = `${statePath}.${crypto.randomUUID()}.tmp`;
-  await fs.promises.writeFile(temporaryPath, JSON.stringify(installedProducts, null, 2), { encoding: 'utf8', flag: 'wx' });
-  await fs.promises.rename(temporaryPath, statePath);
-}
-
-async function saveCatalogVersions(versions) {
-  const statePath = getCatalogStatePath();
-  const temporaryPath = `${statePath}.${crypto.randomUUID()}.tmp`;
-  await fs.promises.writeFile(temporaryPath, JSON.stringify(versions, null, 2), { encoding: 'utf8', flag: 'wx' });
-  await fs.promises.rename(temporaryPath, statePath);
-}
-
-async function refreshProductReleases({ notifyChecking = true } = {}) {
-  if (isRefreshingCatalog) return;
-  isRefreshingCatalog = true;
-  if (notifyChecking) sendToWindow('products:status', { status: 'checking' });
-  try {
-    const manifest = await fetchProductManifest(releaseConfig.github);
-    const products = {};
-
-    for (const [id, release] of Object.entries(manifest.products)) {
-      const installedVersion = installedProducts[id]?.version || null;
-      products[id] = {
-        name: release.name,
-        description: release.description,
-        version: release.version,
-        sizeBytes: release.sizeBytes,
-        releaseNotes: release.releaseNotes,
-        uninstaller: installedProducts[id]?.uninstaller || null,
-        installedVersion,
-        installed: Boolean(installedVersion),
-        updateAvailable: Boolean(installedVersion && compareVersions(release.version, installedVersion) > 0)
-      };
-    }
-
-    const previousVersions = knownCatalogVersions;
-    const newProducts = previousVersions === undefined || previousVersions === null
-      ? []
-      : getNewProducts(Object.keys(previousVersions), products);
-    const changedProducts = previousVersions
-      ? getChangedProducts(previousVersions, products)
-      : [];
-    const productVersions = Object.fromEntries(
-      Object.entries(products).map(([id, product]) => [id, product.version])
-    );
-    await saveCatalogVersions(productVersions);
-    knownCatalogVersions = productVersions;
-    for (const [id, installedProduct] of Object.entries(installedProducts)) {
-      if (!products[id]) {
-        products[id] = {
-          name: installedProduct.name || id,
-          description: installedProduct.description || 'Installiertes Programm',
-          version: installedProduct.version,
-          sizeBytes: null,
-          releaseNotes: '',
-          uninstaller: installedProduct.uninstaller,
-          installedVersion: installedProduct.version,
-          installed: true,
-          updateAvailable: false,
-          removedFromCatalog: true
-        };
-      }
-    }
-    sendToWindow('products:status', { status: 'ready', products, installedProducts, newProducts, changedProducts });
-  } catch (error) {
-    console.error('Der Programmkatalog konnte nicht geladen werden:', error);
-    sendToWindow('products:status', { status: 'error', message: error.message, installedProducts });
-  } finally {
-    isRefreshingCatalog = false;
-  }
-}
-
-function startCatalogRefresh() {
-  clearInterval(catalogRefreshTimer);
-  catalogRefreshTimer = setInterval(() => {
-    void refreshProductReleases({ notifyChecking: false });
-  }, CATALOG_REFRESH_INTERVAL_MS);
-  catalogRefreshTimer.unref();
-}
+  const child = spawn(uninstallerPath, [], { detached: true, stdio: "ignore" });
+  await new Promise((resolve, reject) => {
+    child.once("spawn", resolve);
+    child.once("error", reject);
+  });
+  child.unref();
+  app.quit();
+  return true;
+});
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1000,
-    height: 700,
-    minWidth: 700,
-    minHeight: 540,
-    title: 'JS Studio Download Assistent',
-    icon: path.join(__dirname, 'build', 'icon.ico'),
-    backgroundColor: '#f3f4f6',
-    autoHideMenuBar: true,
+    width: 1200,
+    height: 800,
+    minWidth: 900,
+    minHeight: 650,
+    title: "JS Studio Download-Assistent",
+    frame: false,
+    backgroundColor: "#f4f8ff",
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      nodeIntegration: false,
+      preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
+      nodeIntegration: false,
       sandbox: true
     }
   });
 
-  mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (!isTrustedRendererUrl(url)) event.preventDefault();
+  mainWindow.on("closed", () => {
+    mainWindow = undefined;
   });
-  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  if (app.isPackaged) {
-    const hostedUrl = `${getHostedRendererUrl()}?build=${Date.now()}`;
-    mainWindow.loadURL(hostedUrl, {
-      extraHeaders: 'Cache-Control: no-cache\r\nPragma: no-cache\r\n'
-    }).catch(async (error) => {
-      console.error('Online-Oberfläche konnte nicht geladen werden; lokale Oberfläche wird verwendet:', error);
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        await mainWindow.loadFile(path.join(__dirname, 'index.html'));
-      }
+  mainWindow.loadFile(resolveUiEntry())
+    .then(flushPendingEvents)
+    .catch((error) => {
+      console.error("Die lokale App-Oberfläche konnte nicht geladen werden:", error);
     });
-  } else {
-    mainWindow.loadFile(path.join(__dirname, 'index.html'));
-  }
-  mainWindow.on('closed', () => {
-    clearInterval(catalogRefreshTimer);
-    catalogRefreshTimer = undefined;
-    mainWindow = null;
-  });
-  mainWindow.on('focus', () => {
-    void refreshProductReleases({ notifyChecking: false });
-  });
 }
-
-function runInstaller(installerPath) {
-  return new Promise((resolve, reject) => {
-    const installer = spawn(installerPath, [], { stdio: 'ignore', windowsHide: false });
-    installer.once('error', reject);
-    installer.once('close', (code, signal) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`Das Installationsprogramm wurde nicht erfolgreich beendet (Code ${code ?? signal ?? 'unbekannt'}).`));
-      }
-    });
-  });
-}
-
-async function checkAssistantUpdate() {
-  if (isCheckingAssistantUpdate) return;
-  isCheckingAssistantUpdate = true;
-  sendToWindow('assistant:update-status', { status: 'checking' });
-  try {
-    assistantUpdateRelease = await fetchLatestAssistantRelease(releaseConfig.github, app.getVersion());
-    if (!assistantUpdateRelease) {
-      sendToWindow('assistant:update-status', { status: 'current', version: app.getVersion() });
-      return;
-    }
-    sendToWindow('assistant:update-status', {
-      status: 'available',
-      ...assistantUpdateRelease
-    });
-  } catch (error) {
-    console.error('Updateinformationen für den Assistenten konnten nicht geladen werden:', error);
-    sendToWindow('assistant:update-status', { status: 'error', message: error.message });
-  } finally {
-    isCheckingAssistantUpdate = false;
-  }
-}
-
-ipcMain.handle('launcher:get-initial-state', (event) => {
-  assertTrustedRenderer(event);
-  return {
-    appVersion: app.getVersion(),
-    releaseConfigPath,
-    productsConfigured: true,
-    productsManifestUrl: getProductManifestUrl(releaseConfig.github),
-    installedProducts
-  };
-});
-
-ipcMain.handle('launcher:open-release-config', async (event) => {
-  assertTrustedRenderer(event);
-  const error = await shell.openPath(releaseConfigPath);
-  if (error) throw new Error(`Die Release-Konfiguration konnte nicht geöffnet werden: ${error}`);
-});
-
-ipcMain.handle('products:refresh-catalog', (event) => {
-  assertTrustedRenderer(event);
-  return refreshProductReleases();
-});
-
-ipcMain.handle('products:install', async (event, productId) => {
-  assertTrustedRenderer(event);
-  if (!validateProductId(productId)) throw new Error('Ungültige Produkt-ID.');
-  if (activeInstalls.has(productId)) throw new Error('Für dieses Produkt läuft bereits eine Installation.');
-
-  activeInstalls.add(productId);
-  try {
-    const manifest = await fetchProductManifest(releaseConfig.github);
-    const release = manifest.products[productId];
-    if (!release) throw new Error('Für dieses Produkt ist noch keine Installationsdatei im öffentlichen GitHub-Release veröffentlicht.');
-    const installedVersion = installedProducts[productId]?.version;
-    if (installedVersion && compareVersions(release.version, installedVersion) <= 0) {
-      throw new Error('Für dieses Programm ist keine neuere Katalogversion verfügbar.');
-    }
-
-    const downloadsPath = path.join(app.getPath('userData'), 'downloads');
-    const installerPath = await downloadVerifiedInstaller({
-      ...release,
-      repository: releaseConfig.github
-    }, productId, downloadsPath, (progress) => {
-      sendToWindow('products:progress', { ...progress, status: 'downloading' });
-    });
-
-    sendToWindow('products:progress', { productId, status: 'installing', percent: 100 });
-    await runInstaller(installerPath);
-
-    installedProducts[productId] = {
-      name: release.name,
-      description: release.description,
-      version: release.version,
-      uninstaller: release.uninstaller
-    };
-    await saveInstalledProducts();
-    await fs.promises.rm(installerPath, { force: true });
-    sendToWindow('products:progress', { productId, status: 'installed', version: release.version, percent: 100 });
-    await refreshProductReleases({ notifyChecking: false });
-    return { version: release.version };
-  } catch (error) {
-    console.error(`Installation von ${productId} fehlgeschlagen:`, error);
-    sendToWindow('products:progress', { productId, status: 'error', message: error.message });
-    throw error;
-  } finally {
-    activeInstalls.delete(productId);
-  }
-});
-
-ipcMain.handle('products:uninstall', async (event, productId) => {
-  assertTrustedRenderer(event);
-  if (!validateProductId(productId)) throw new Error('Ungültige Produkt-ID.');
-  if (activeInstalls.has(productId)) throw new Error('Für dieses Produkt läuft bereits eine Installation.');
-  const installedProduct = installedProducts[productId];
-  if (!installedProduct) throw new Error('Dieses Programm ist nicht als installiert registriert.');
-  if (!installedProduct.uninstaller) {
-    throw new Error('Für diese bestehende Installation ist kein mitgelieferter Deinstaller hinterlegt. Verwende die Windows-Einstellungen, um sie zu entfernen.');
-  }
-
-  activeInstalls.add(productId);
-  try {
-    const uninstallerPath = await downloadVerifiedInstaller({
-      ...installedProduct.uninstaller,
-      repository: releaseConfig.github
-    }, productId, path.join(app.getPath('userData'), 'downloads'), (progress) => {
-      sendToWindow('products:progress', { ...progress, status: 'downloading-uninstaller' });
-    }, 'uninstall');
-    sendToWindow('products:progress', { productId, status: 'uninstalling' });
-    await runInstaller(uninstallerPath);
-    await fs.promises.rm(uninstallerPath, { force: true });
-    delete installedProducts[productId];
-    await saveInstalledProducts();
-    sendToWindow('products:progress', { productId, status: 'uninstalled' });
-    await refreshProductReleases({ notifyChecking: false });
-  } catch (error) {
-    console.error(`Deinstallation von ${productId} fehlgeschlagen:`, error);
-    sendToWindow('products:progress', { productId, status: 'error', message: error.message });
-    throw error;
-  } finally {
-    activeInstalls.delete(productId);
-  }
-});
-
-ipcMain.handle('assistant:check-update', (event) => {
-  assertTrustedRenderer(event);
-  return checkAssistantUpdate();
-});
-
-ipcMain.handle('assistant:download-update', async (event) => {
-  assertTrustedRenderer(event);
-  if (!assistantUpdateRelease) await checkAssistantUpdate();
-  if (!assistantUpdateRelease) throw new Error('Es ist keine neuere Version des Assistenten verfügbar.');
-
-  const installerPath = await downloadVerifiedInstaller({
-    ...assistantUpdateRelease,
-    repository: releaseConfig.github
-  }, 'assistant', path.join(app.getPath('userData'), 'downloads'), (progress) => {
-    sendToWindow('assistant:update-status', {
-      status: 'downloading',
-      percent: progress.percent,
-      receivedBytes: progress.receivedBytes,
-      totalBytes: progress.totalBytes
-    });
-  });
-  downloadedAssistantInstaller = installerPath;
-  sendToWindow('assistant:update-status', {
-    status: 'downloaded',
-    version: assistantUpdateRelease.version,
-    sizeBytes: assistantUpdateRelease.sizeBytes,
-    releaseNotes: assistantUpdateRelease.releaseNotes
-  });
-});
-
-ipcMain.handle('assistant:install-update', (event) => {
-  assertTrustedRenderer(event);
-  if (!downloadedAssistantInstaller) throw new Error('Lade zuerst das ausgewählte Assistenten-Update herunter.');
-  const installer = spawn(downloadedAssistantInstaller, [], {
-    detached: true,
-    stdio: 'ignore',
-    windowsHide: false
-  });
-  installer.once('error', (error) => {
-    console.error('Der Assistenten-Installer konnte nicht gestartet werden:', error);
-    sendToWindow('assistant:update-status', { status: 'error', message: error.message });
-  });
-  installer.once('spawn', () => {
-    installer.unref();
-    app.quit();
-  });
-});
-
-ipcMain.handle('assistant:uninstall', async (event) => {
-  assertTrustedRenderer(event);
-  if (process.platform !== 'win32' || !app.isPackaged) {
-    throw new Error('Die Deinstallation ist nur für die installierte Windows-Version verfügbar.');
-  }
-
-  const uninstallerPath = path.join(path.dirname(app.getPath('exe')), 'Uninstall JS Studio Download Assistent.exe');
-  await fs.promises.access(uninstallerPath, fs.constants.R_OK);
-
-  return new Promise((resolve, reject) => {
-    const uninstaller = spawn(uninstallerPath, [], { detached: true, stdio: 'ignore', windowsHide: true });
-    uninstaller.once('error', reject);
-    uninstaller.once('spawn', () => {
-      uninstaller.unref();
-      app.quit();
-      resolve();
-    });
-  });
-});
 
 app.whenReady().then(async () => {
-  releaseConfig = await loadReleaseConfig();
-  installedProducts = await loadInstalledProducts();
-  knownProductIds = await loadKnownProductIds();
+  await loadCachedCore();
   createWindow();
-  mainWindow.webContents.once('did-finish-load', () => {
-    void refreshProductReleases();
-    void checkAssistantUpdate();
-    startCatalogRefresh();
+  initializeReleaseService(
+    () => mainWindow,
+    async (entryPoint) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        await mainWindow.loadFile(entryPoint);
+        flushPendingEvents();
+      }
+    },
+    loadSettings
+  ).catch((error) => {
+    console.error("Der dynamische Core konnte nicht aktualisiert werden; der lokale Stand bleibt aktiv:", error);
   });
-}).catch((error) => {
-  console.error('Der JS Studio Download Assistent konnte nicht gestartet werden:', error);
-  dialog.showErrorBox('Start fehlgeschlagen', error.message);
-  app.quit();
+
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0 && releaseConfig) {
-    createWindow();
-    mainWindow.webContents.once('did-finish-load', () => {
-      void refreshProductReleases({ notifyChecking: false });
-      void checkAssistantUpdate();
-      startCatalogRefresh();
-    });
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    app.quit();
   }
 });
