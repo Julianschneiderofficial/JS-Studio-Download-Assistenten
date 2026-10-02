@@ -58,10 +58,6 @@
 
     <div id="app-shell" class="app-shell hidden">
       <header class="app-header">
-        <a class="brand" href="#" aria-label="JS Studio">
-          <span class="brand-mark" aria-hidden="true">JS</span>
-          <span class="brand-copy"><strong>JS Studio</strong><span>Download-Assistent</span></span>
-        </a>
         <nav class="primary-nav" aria-label="Hauptnavigation">
           <button class="nav-link is-active" type="button" data-page="programs">Programme</button>
           <button class="nav-link" type="button" data-page="settings">Einstellungen</button>
@@ -74,15 +70,18 @@
       </header>
 
       <main class="content-area">
-        <section id="page-programs" class="page-section">
-          <div class="page-heading">
-            <h1>Programme &amp; Plugins</h1>
-            <p class="muted">Installieren, aktualisieren und entfernen Sie Ihre Software.</p>
-          </div>
-          <div id="program-catalog" class="program-grid"></div>
+        <section id="page-programs" class="workspace">
+          <aside class="product-panel" aria-label="Programmliste">
+            <div class="panel-title">Bitte wählen Sie ein Programm aus</div>
+            <div id="program-catalog" class="product-groups"></div>
+          </aside>
+          <section class="detail-panel" aria-live="polite">
+            <div class="panel-bar"><span>Zielordner</span><span id="target-directory" class="target-path"></span></div>
+            <div id="program-detail" class="detail-body"></div>
+          </section>
         </section>
 
-          <section id="page-settings" class="page-section hidden">
+        <section id="page-settings" class="page-section hidden">
             <div class="page-heading">
               <h1>Einstellungen</h1>
               <p class="muted">Verwalten Sie Download- und Updateoptionen.</p>
@@ -126,12 +125,15 @@
           </section>
         </main>
 
-      <footer class="statusbar">
-        <span class="support-dot" aria-hidden="true"></span>
-        <span id="core-version">Assistent bereit</span>
+      <footer class="app-footer">
+        <div class="footer-brand">
+          <span class="brand-mark" aria-hidden="true">JS</span>
+          <span class="footer-name"><strong>JS Studio</strong> Download-Assistent</span>
+          <span id="core-version" class="footer-version">Assistent bereit</span>
+        </div>
+        <div id="program-actions" class="footer-actions"></div>
       </footer>
     </div>
-
     <dialog id="release-notes-dialog" class="release-dialog">
       <form method="dialog">
         <button class="dialog-close" aria-label="Schließen">×</button>
