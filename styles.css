@@ -1247,3 +1247,23 @@ p {
     transition-duration: 0.01ms !important;
   }
 }
+
+.update-banner {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  background: #161920;
+  color: #f3f4f6;
+  font-size: 12px;
+}
+
+.update-banner.hidden {
+  display: none;
+}

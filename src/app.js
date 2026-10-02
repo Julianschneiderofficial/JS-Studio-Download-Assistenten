@@ -1,4 +1,4 @@
-const api = window.downloadAssistant;
+﻿const api = window.downloadAssistant;
 let programs = [];
 
 const loginScreen = document.querySelector("#login-screen");
@@ -82,7 +82,7 @@ function showPage(pageName) {
     document.querySelector(`[data-page="${page}"]`)?.classList.toggle("is-active", page === pageName);
   }
   document.querySelector("#breadcrumb-current").textContent =
-    pageName === "dashboard" ? "Übersicht" : pageName === "programs" ? "Programme" : "Einstellungen";
+    pageName === "dashboard" ? "Ãœbersicht" : pageName === "programs" ? "Programme" : "Einstellungen";
 }
 
 async function populateSettings() {
@@ -108,7 +108,7 @@ function clearSession() {
   try {
     localStorage.removeItem(SESSION_KEY);
   } catch {
-    // Storage nicht verfügbar; nichts zu löschen.
+    // Storage nicht verfÃ¼gbar; nichts zu lÃ¶schen.
   }
 }
 
@@ -183,7 +183,7 @@ document.querySelector("#window-minimize").addEventListener("click", async () =>
 document.querySelector("#window-maximize").addEventListener("click", async (event) => {
   try {
     const isMaximized = await api.windowControls.toggleMaximize();
-    event.currentTarget.textContent = isMaximized ? "❐" : "□";
+    event.currentTarget.textContent = isMaximized ? "â" : "â–¡";
     event.currentTarget.title = isMaximized ? "Wiederherstellen" : "Maximieren";
     event.currentTarget.setAttribute("aria-label", event.currentTarget.title);
   } catch (error) {
@@ -256,7 +256,7 @@ document.querySelector("#check-updates").addEventListener("click", async () => {
   try {
     const result = await api.checkForUpdates();
     if (result.updateAvailable) {
-      showToast(`Core-Version ${result.version} ist verfügbar. Aktivieren Sie automatische Updates in den Einstellungen.`, true);
+      showToast(`Core-Version ${result.version} ist verfÃ¼gbar. Aktivieren Sie automatische Updates in den Einstellungen.`, true);
     } else if (!result.updated) {
       showToast(`Der App-Core ${result.version} ist aktuell.`);
     }
@@ -266,7 +266,7 @@ document.querySelector("#check-updates").addEventListener("click", async () => {
 });
 
 document.querySelector("#uninstall-assistant").addEventListener("click", async () => {
-  if (!window.confirm("Möchten Sie den JS Studio Download-Assistenten wirklich deinstallieren?")) {
+  if (!window.confirm("MÃ¶chten Sie den JS Studio Download-Assistenten wirklich deinstallieren?")) {
     return;
   }
   try {
@@ -276,9 +276,22 @@ document.querySelector("#uninstall-assistant").addEventListener("click", async (
   }
 });
 
+document.querySelector("#update-install").addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  try {
+    await api.checkForUpdates();
+  } catch (error) {
+    showToast(error.message, true);
+    button.disabled = false;
+  }
+});
+
 if (api) {
   api.onUpdateStatus((status) => {
-    if (status?.message) {
+    if (status?.updateAvailable) {
+      document.querySelector("#update-banner").classList.remove("hidden");
+    } else if (status?.message) {
       showToast(status.message, status.type === "error");
     }
   });
@@ -307,6 +320,6 @@ if (api) {
     });
   }
 } else {
-  loginError.textContent = "Bitte starten Sie den Download-Assistenten über die Desktop-App.";
+  loginError.textContent = "Bitte starten Sie den Download-Assistenten Ã¼ber die Desktop-App.";
   loginForm.querySelector('[type="submit"]').disabled = true;
 }

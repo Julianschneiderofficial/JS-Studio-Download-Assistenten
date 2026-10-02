@@ -1,4 +1,4 @@
-const { app } = require("electron");
+﻿const { app } = require("electron");
 const { createHash } = require("node:crypto");
 const { mkdir, readFile, rename, rm, writeFile } = require("node:fs/promises");
 const path = require("node:path");
@@ -6,11 +6,8 @@ const path = require("node:path");
 const CORE_OWNER = "Julianschneiderofficial";
 const CORE_REPOSITORY = "JS-Studio-Download-Assistenten";
 const CORE_BRANCH = "main";
-const CORE_REF_URL =
-  `https://api.github.com/repos/${CORE_OWNER}/${CORE_REPOSITORY}/git/ref/heads/${CORE_BRANCH}`;
 const CORE_RAW_BASE_URL =
   `https://raw.githubusercontent.com/${CORE_OWNER}/${CORE_REPOSITORY}/`;
-const CORE_FILES = ["index.html", "styles.css", "src/app.js", "catalog.json"];
 const MAX_FILE_SIZE = 2 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 15000;
 
@@ -50,62 +47,10 @@ function resolveUiEntry() {
   return path.join(directory, "index.html");
 }
 
-function isValidManifest(manifest) {
-  return manifest
-    && typeof manifest === "object"
-    && !Array.isArray(manifest)
-    && typeof manifest.version === "string"
-    && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(manifest.version)
-    && (typeof manifest.changelog === "string"
-      || (Array.isArray(manifest.changelog)
-        && manifest.changelog.length <= 100
-        && manifest.changelog.every((note) => typeof note === "string" && note.length <= 1000)))
-    && manifest.files
-    && typeof manifest.files === "object"
-    && !Array.isArray(manifest.files)
-    && Object.keys(manifest.files || {}).length === CORE_FILES.length
-    && CORE_FILES.every((file) => /^[a-f0-9]{64}$/.test(manifest.files[file] || ""));
-}
-
-function compareVersions(left, right) {
-  const leftMatch = left.match(/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/);
-  const rightMatch = right.match(/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/);
-  for (let index = 1; index <= 3; index += 1) {
-    const a = Number(leftMatch[index]);
-    const b = Number(rightMatch[index]);
-    if (a === b) {
-      continue;
-    }
-    return a > b ? 1 : -1;
-  }
-
-  const leftPrerelease = leftMatch[4]?.split(".") || [];
-  const rightPrerelease = rightMatch[4]?.split(".") || [];
-  if (leftPrerelease.length === 0 || rightPrerelease.length === 0) {
-    return leftPrerelease.length === rightPrerelease.length ? 0 : leftPrerelease.length === 0 ? 1 : -1;
-  }
-  for (let index = 0; index < Math.max(leftPrerelease.length, rightPrerelease.length); index += 1) {
-    const a = leftPrerelease[index];
-    const b = rightPrerelease[index];
-    if (a === undefined || b === undefined) {
-      return a === b ? 0 : a === undefined ? -1 : 1;
-    }
-    if (a === b) {
-      continue;
-    }
-    if (/^\d+$/.test(a) && /^\d+$/.test(b)) {
-      return Number(a) > Number(b) ? 1 : -1;
-    }
-    if (/^\d+$/.test(a)) {
-      return -1;
-    }
-    if (/^\d+$/.test(b)) {
-      return 1;
-    }
-    return a > b ? 1 : -1;
-  }
-  return 0;
-}
+const SHA_PATTERN = /^[a-f0-9]{40}$/;
+const SAFE_PATH = /^(?:index\.html|styles\.css|catalog\.json|(?:src|assets|styles)\/[A-Za-z0-9._\-\/]+)$/;
+const POLL_INTERVAL_MS = 3 * 60 * 1000;
+const API_BASE_URL = `https://api.github.com/repos/${CORE_OWNER}/${CORE_REPOSITORY}/`;
 
 async function readActiveVersion() {
   if (activeCoreDirectory) {
@@ -114,7 +59,7 @@ async function readActiveVersion() {
 
   try {
     const state = JSON.parse(await readFile(path.join(coreStorageDirectory(), "active.json"), "utf8"));
-    if (typeof state.version === "string" && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(state.version)) {
+    if (typeof state.version === "string" && SHA_PATTERN.test(state.version)) {
       const directory = path.join(coreStorageDirectory(), state.version);
       await readFile(path.join(directory, "index.html"));
       activeCoreDirectory = directory;
@@ -129,7 +74,6 @@ async function readActiveVersion() {
   activeCoreDirectory = app.getAppPath();
   return app.getVersion();
 }
-
 async function fetchBytes(url, maxBytes) {
   const response = await fetch(url, {
     cache: "no-store",
@@ -142,7 +86,7 @@ async function fetchBytes(url, maxBytes) {
 
   const declaredLength = Number(response.headers.get("content-length"));
   if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
-    throw new Error("Remote-Datei überschreitet die erlaubte Größe.");
+    throw new Error("Remote-Datei Ã¼berschreitet die erlaubte GrÃ¶ÃŸe.");
   }
 
   const reader = response.body.getReader();
@@ -156,56 +100,79 @@ async function fetchBytes(url, maxBytes) {
     totalBytes += value.byteLength;
     if (totalBytes > maxBytes) {
       await reader.cancel();
-      throw new Error("Remote-Datei überschreitet die erlaubte Größe.");
+      throw new Error("Remote-Datei Ã¼berschreitet die erlaubte GrÃ¶ÃŸe.");
     }
     chunks.push(Buffer.from(value));
   }
   return Buffer.concat(chunks, totalBytes);
 }
 
-async function readManifest() {
-  const refBytes = await fetchBytes(CORE_REF_URL, 128 * 1024);
-  const ref = JSON.parse(refBytes.toString("utf8"));
-  if (
-    ref.ref !== `refs/heads/${CORE_BRANCH}`
-    || ref.object?.type !== "commit"
-    || !/^[a-f0-9]{40}$/.test(ref.object.sha || "")
-  ) {
+async function fetchJson(url) {
+  return JSON.parse((await fetchBytes(url, 4 * 1024 * 1024)).toString("utf8"));
+}
+
+function gitBlobSha(bytes) {
+  return createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
+}
+
+async function readLatestCommit() {
+  const ref = await fetchJson(`${API_BASE_URL}git/ref/heads/${CORE_BRANCH}`);
+  if (ref.ref !== `refs/heads/${CORE_BRANCH}` || ref.object?.type !== "commit" || !SHA_PATTERN.test(ref.object.sha || "")) {
     throw new Error("GitHub lieferte keinen gültigen Commit für den App-Core.");
   }
+  return ref.object.sha;
+}
 
-  const contentBaseUrl = `${CORE_RAW_BASE_URL}${ref.object.sha}/`;
-  const bytes = await fetchBytes(new URL("updates/latest.json", contentBaseUrl).href, 128 * 1024);
-  const manifest = JSON.parse(bytes.toString("utf8"));
-  if (!isValidManifest(manifest)) {
-    throw new Error("Das Update-Manifest hat ein ungültiges Format.");
+async function readChangelog(newSha, oldSha) {
+  try {
+    const commits = await fetchJson(`${API_BASE_URL}commits?sha=${newSha}&per_page=15`);
+    const notes = [];
+    for (const entry of commits) {
+      if (entry.sha === oldSha) {
+        break;
+      }
+      const subject = String(entry.commit?.message || "").split(/\r?\n/)[0].trim();
+      if (subject) {
+        notes.push(subject);
+      }
+    }
+    return notes.length > 0 ? notes : ["Neuer Stand aus dem Repository geladen."];
+  } catch {
+    return ["Neuer Stand aus dem Repository geladen."];
   }
-  return { manifest, contentBaseUrl };
 }
 
-function formatChangelog(changelog) {
-  const entries = Array.isArray(changelog) ? changelog : changelog.split(/\r?\n/);
-  return entries.map((entry) => String(entry).trim()).filter(Boolean);
+async function readCoreFileList(sha) {
+  const tree = await fetchJson(`${API_BASE_URL}git/trees/${sha}?recursive=1`);
+  const files = (tree.tree || []).filter((entry) =>
+    entry.type === "blob"
+    && SAFE_PATH.test(entry.path)
+    && !entry.path.split("/").includes("..")
+    && SHA_PATTERN.test(entry.sha || "")
+    && entry.size <= MAX_FILE_SIZE);
+  for (const required of ["index.html", "styles.css", "src/app.js", "catalog.json"]) {
+    if (!files.some((entry) => entry.path === required)) {
+      throw new Error(`Im Repository fehlt ${required}.`);
+    }
+  }
+  return files;
 }
 
-async function installCore(manifest, contentBaseUrl) {
+async function installCore(sha, files) {
   const storageDirectory = coreStorageDirectory();
-  const versionDirectory = path.join(storageDirectory, manifest.version);
-  const stagingDirectory = path.join(storageDirectory, `.staging-${manifest.version}-${process.pid}`);
+  const versionDirectory = path.join(storageDirectory, sha);
+  const stagingDirectory = path.join(storageDirectory, `.staging-${sha}-${process.pid}`);
   await mkdir(storageDirectory, { recursive: true });
   await rm(stagingDirectory, { recursive: true, force: true });
   await mkdir(stagingDirectory, { recursive: true });
 
   try {
-    for (const file of CORE_FILES) {
-      const url = new URL(file, contentBaseUrl).href;
-      const bytes = await fetchBytes(url, MAX_FILE_SIZE);
-      const digest = createHash("sha256").update(bytes).digest("hex");
-      if (digest !== manifest.files[file]) {
-        throw new Error(`Prüfsumme für ${file} stimmt nicht mit dem Manifest überein.`);
+    for (const file of files) {
+      const bytes = await fetchBytes(`${CORE_RAW_BASE_URL}${sha}/${file.path}`, MAX_FILE_SIZE);
+      if (gitBlobSha(bytes) !== file.sha) {
+        throw new Error(`Prüfsumme für ${file.path} stimmt nicht mit GitHub überein.`);
       }
-
-      const destination = path.join(stagingDirectory, ...file.split("/"));
+      const destination = path.join(stagingDirectory, ...file.path.split("/"));
       await mkdir(path.dirname(destination), { recursive: true });
       await writeFile(destination, bytes, { flag: "wx" });
     }
@@ -215,7 +182,7 @@ async function installCore(manifest, contentBaseUrl) {
 
     const statePath = path.join(storageDirectory, "active.json");
     const temporaryStatePath = `${statePath}.${process.pid}.tmp`;
-    await writeFile(temporaryStatePath, JSON.stringify({ version: manifest.version }), "utf8");
+    await writeFile(temporaryStatePath, JSON.stringify({ version: sha }), "utf8");
     await rename(temporaryStatePath, statePath);
     activeCoreDirectory = versionDirectory;
   } catch (error) {
@@ -224,50 +191,56 @@ async function installCore(manifest, contentBaseUrl) {
   }
 }
 
-async function checkForUpdates({ apply = true } = {}) {
+async function checkForUpdates({ apply = true, silent = false } = {}) {
   if (updateInProgress) {
     return updateInProgress;
   }
 
   updateInProgress = (async () => {
-    sendToRenderer("updater:status", { message: "Suche nach UI- und Katalog-Updates …", type: "info" });
+    if (!silent) {
+      sendToRenderer("updater:status", { message: "Suche nach Updates …", type: "info" });
+    }
     try {
-      const { manifest, contentBaseUrl } = await readManifest();
+      const latestSha = await readLatestCommit();
       const currentVersion = await readActiveVersion();
-      if (compareVersions(manifest.version, currentVersion) <= 0) {
-        sendToRenderer("updater:status", { message: "UI, Logik und Katalog sind aktuell.", type: "success" });
+      if (latestSha === currentVersion) {
+        if (!silent) {
+          sendToRenderer("updater:status", { message: "Die App ist auf dem neuesten Stand.", type: "success" });
+        }
         return { updated: false, version: currentVersion };
       }
 
       if (!apply) {
         sendToRenderer("updater:status", {
-          message: `Core-Version ${manifest.version} ist verfügbar. Automatische Updates sind in den Einstellungen deaktiviert.`,
-          type: "info"
+          message: "Ein neues Update ist verfügbar.",
+          type: "info",
+          updateAvailable: true
         });
-        return { updated: false, updateAvailable: true, version: manifest.version };
+        return { updated: false, updateAvailable: true, version: latestSha };
       }
 
-      await installCore(manifest, contentBaseUrl);
+      const files = await readCoreFileList(latestSha);
+      await installCore(latestSha, files);
+      const notes = await readChangelog(latestSha, SHA_PATTERN.test(currentVersion) ? currentVersion : undefined);
       if (onCoreUpdated) {
         await onCoreUpdated(resolveUiEntry());
       }
 
-      const releaseNotes = {
-        version: manifest.version,
-        notes: formatChangelog(manifest.changelog)
-      };
+      const releaseNotes = { version: latestSha.slice(0, 7), notes };
       sendToRenderer("updater:release-notes", releaseNotes);
       sendToRenderer("updater:status", {
-        message: `App-Core ${manifest.version} wurde ohne Neuinstallation aktualisiert.`,
+        message: `Update ${releaseNotes.version} wurde installiert.`,
         type: "success"
       });
       return { updated: true, ...releaseNotes };
     } catch (error) {
-      console.error("Dynamisches Core-Update fehlgeschlagen; lokale Core-Version bleibt aktiv:", error);
-      sendToRenderer("updater:status", {
-        message: `Core-Update fehlgeschlagen; die vorhandene Version bleibt aktiv: ${error.message}`,
-        type: "error"
-      });
+      console.error("Core-Update fehlgeschlagen; lokale Version bleibt aktiv:", error);
+      if (!silent) {
+        sendToRenderer("updater:status", {
+          message: `Update fehlgeschlagen; die vorhandene Version bleibt aktiv: ${error.message}`,
+          type: "error"
+        });
+      }
       throw error;
     }
   })();
@@ -284,6 +257,9 @@ async function initializeReleaseService(getWindow, reloadCore, loadSettings) {
   onCoreUpdated = reloadCore;
   await readActiveVersion();
   const settings = await loadSettings();
+  setInterval(() => {
+    checkForUpdates({ apply: false, silent: true }).catch(() => {});
+  }, POLL_INTERVAL_MS).unref();
   await checkForUpdates({ apply: settings.automaticUpdates });
 }
 
@@ -296,7 +272,8 @@ function getActiveCoreDirectory() {
 }
 
 async function getActiveCoreVersion() {
-  return readActiveVersion();
+  const version = await readActiveVersion();
+  return SHA_PATTERN.test(version) ? version.slice(0, 7) : version;
 }
 
 module.exports = {
