@@ -6,9 +6,10 @@ const path = require("node:path");
 const CORE_OWNER = "Julianschneiderofficial";
 const CORE_REPOSITORY = "JS-Studio-Download-Assistenten";
 const CORE_BRANCH = "main";
-const CORE_CONTENT_BASE_URL =
-  `https://raw.githubusercontent.com/${CORE_OWNER}/${CORE_REPOSITORY}/${CORE_BRANCH}/`;
-const CORE_MANIFEST_URL = new URL("updates/latest.json", CORE_CONTENT_BASE_URL).href;
+const CORE_REF_URL =
+  `https://api.github.com/repos/${CORE_OWNER}/${CORE_REPOSITORY}/git/ref/heads/${CORE_BRANCH}`;
+const CORE_RAW_BASE_URL =
+  `https://raw.githubusercontent.com/${CORE_OWNER}/${CORE_REPOSITORY}/`;
 const CORE_FILES = ["index.html", "styles.css", "src/app.js", "catalog.json"];
 const MAX_FILE_SIZE = 2 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 15000;
@@ -163,12 +164,23 @@ async function fetchBytes(url, maxBytes) {
 }
 
 async function readManifest() {
-  const bytes = await fetchBytes(CORE_MANIFEST_URL, 128 * 1024);
+  const refBytes = await fetchBytes(CORE_REF_URL, 128 * 1024);
+  const ref = JSON.parse(refBytes.toString("utf8"));
+  if (
+    ref.ref !== `refs/heads/${CORE_BRANCH}`
+    || ref.object?.type !== "commit"
+    || !/^[a-f0-9]{40}$/.test(ref.object.sha || "")
+  ) {
+    throw new Error("GitHub lieferte keinen gültigen Commit für den App-Core.");
+  }
+
+  const contentBaseUrl = `${CORE_RAW_BASE_URL}${ref.object.sha}/`;
+  const bytes = await fetchBytes(new URL("updates/latest.json", contentBaseUrl).href, 128 * 1024);
   const manifest = JSON.parse(bytes.toString("utf8"));
   if (!isValidManifest(manifest)) {
     throw new Error("Das Update-Manifest hat ein ungültiges Format.");
   }
-  return manifest;
+  return { manifest, contentBaseUrl };
 }
 
 function formatChangelog(changelog) {
@@ -176,7 +188,7 @@ function formatChangelog(changelog) {
   return entries.map((entry) => String(entry).trim()).filter(Boolean);
 }
 
-async function installCore(manifest) {
+async function installCore(manifest, contentBaseUrl) {
   const storageDirectory = coreStorageDirectory();
   const versionDirectory = path.join(storageDirectory, manifest.version);
   const stagingDirectory = path.join(storageDirectory, `.staging-${manifest.version}-${process.pid}`);
@@ -186,7 +198,7 @@ async function installCore(manifest) {
 
   try {
     for (const file of CORE_FILES) {
-      const url = new URL(file, CORE_CONTENT_BASE_URL).href;
+      const url = new URL(file, contentBaseUrl).href;
       const bytes = await fetchBytes(url, MAX_FILE_SIZE);
       const digest = createHash("sha256").update(bytes).digest("hex");
       if (digest !== manifest.files[file]) {
@@ -220,7 +232,7 @@ async function checkForUpdates({ apply = true } = {}) {
   updateInProgress = (async () => {
     sendToRenderer("updater:status", { message: "Suche nach UI- und Katalog-Updates …", type: "info" });
     try {
-      const manifest = await readManifest();
+      const { manifest, contentBaseUrl } = await readManifest();
       const currentVersion = await readActiveVersion();
       if (compareVersions(manifest.version, currentVersion) <= 0) {
         sendToRenderer("updater:status", { message: "UI, Logik und Katalog sind aktuell.", type: "success" });
@@ -235,7 +247,7 @@ async function checkForUpdates({ apply = true } = {}) {
         return { updated: false, updateAvailable: true, version: manifest.version };
       }
 
-      await installCore(manifest);
+      await installCore(manifest, contentBaseUrl);
       if (onCoreUpdated) {
         await onCoreUpdated(resolveUiEntry());
       }
