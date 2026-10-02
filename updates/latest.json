@@ -1,13 +1,14 @@
 {
-  "version": "1.0.5",
+  "version": "1.0.6",
   "changelog": [
     "Demo-Anmeldung akzeptiert beliebige nichtleere Zugangsdaten einschließlich admin/admin.",
     "Login bleibt im Deep-Dark-Design und kennzeichnet den nicht authentifizierten Demo-Modus.",
-    "Die SHA-256-Pruefsummen sind auf die von GitHub ausgelieferten LF-Dateien abgestimmt."
+    "Die SHA-256-Pruefsummen sind auf die von GitHub ausgelieferten LF-Dateien abgestimmt.",
+    "Die Einstellungen enthalten jetzt eine hervorgehobene rote Deinstallation fuer den Windows-Assistenten."
   ],
   "files": {
-    "index.html": "c8513dc9a567bc4fed5d1fb3a22b21e89407da2f3cd6258825730aed73de7323",
-    "styles.css": "99420223390c1dfa267fcefc8f73349415ff9c79e0bb161d07b2ea52370bfb4a",
+    "index.html": "cf910fac77dc43d091226a3c02a0ad01015c9252828ff11b29af303a1eac2fd7",
+    "styles.css": "a7dafb75aa257d55e38d06490b300d78d68690e9c2926f82a48814773ca98ea0",
     "src/app.js": "20f7856b8074774513192f4ec8f03d5cbcadd2cb275a65bfd112639282864ec2",
     "catalog.json": "cc4bba80617bee101c0144c4611335cde16b29be2f45f5f1e1770ac4a116b496"
   }

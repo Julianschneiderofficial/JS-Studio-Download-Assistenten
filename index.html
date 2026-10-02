@@ -187,7 +187,16 @@
               </div>
               <p id="settings-message" class="form-message" role="status" aria-live="polite"></p>
             </form>
-            <button id="uninstall-assistant" class="danger-link" type="button">Download-Assistent deinstallieren</button>
+            <section class="danger-zone" aria-labelledby="uninstall-heading">
+              <div>
+                <h2 id="uninstall-heading">Download-Assistent entfernen</h2>
+                <p>Startet das Windows-Deinstallationsprogramm. Diese Aktion kann nicht rückgängig gemacht werden.</p>
+              </div>
+              <button id="uninstall-assistant" class="button danger-button" type="button">
+                <span aria-hidden="true">!</span>
+                Deinstallieren
+              </button>
+            </section>
           </section>
         </main>
       </section>
