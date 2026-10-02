@@ -57,104 +57,33 @@
     </main>
 
     <div id="app-shell" class="app-shell hidden">
-      <aside class="sidebar">
-        <a class="brand" href="#" aria-label="JS Studio Dashboard">
+      <header class="app-header">
+        <a class="brand" href="#" aria-label="JS Studio">
           <span class="brand-mark" aria-hidden="true">JS</span>
-          <span class="brand-copy">
-            <strong>JS Studio</strong>
-            <span>Software Center</span>
-          </span>
+          <span class="brand-copy"><strong>JS Studio</strong><span>Download-Assistent</span></span>
         </a>
-        <div class="sidebar-label">Arbeitsbereich</div>
         <nav class="primary-nav" aria-label="Hauptnavigation">
-          <button class="nav-link is-active" type="button" data-page="dashboard">
-            <span class="nav-icon" aria-hidden="true">⌂</span>
-            Übersicht
-          </button>
-          <button class="nav-link" type="button" data-page="programs">
-            <span class="nav-icon" aria-hidden="true">▦</span>
-            Programme
-          </button>
-          <button class="nav-link" type="button" data-page="settings">
-            <span class="nav-icon" aria-hidden="true">⚙</span>
-            Einstellungen
-          </button>
+          <button class="nav-link is-active" type="button" data-page="programs">Programme</button>
+          <button class="nav-link" type="button" data-page="settings">Einstellungen</button>
         </nav>
-        <div class="sidebar-bottom">
-          <div class="support-card">
-            <span class="support-dot" aria-hidden="true"></span>
-            <div>
-              <strong>Alles aktuell</strong>
-              <span id="core-version">Assistent bereit</span>
-            </div>
-          </div>
-          <button id="logout-button" class="nav-link logout-link" type="button">
-            <span class="nav-icon" aria-hidden="true">↪</span>
-            Abmelden
-          </button>
+        <div class="header-user">
+          <span id="profile-initials" class="avatar">JS</span>
+          <span id="profile-name">Benutzer</span>
+          <button id="logout-button" class="text-button" type="button">Abmelden</button>
         </div>
-      </aside>
+      </header>
 
-      <section class="main-column">
-        <header class="topbar">
-          <div>
-            <span class="topbar-kicker">JS Studio</span>
-            <span class="topbar-divider">/</span>
-            <span id="breadcrumb-current">Übersicht</span>
+      <main class="content-area">
+        <section id="page-programs" class="page-section">
+          <div class="page-heading">
+            <h1>Programme &amp; Plugins</h1>
+            <p class="muted">Installieren, aktualisieren und entfernen Sie Ihre Software.</p>
           </div>
-          <div class="profile-chip">
-            <span id="profile-initials" class="avatar">JS</span>
-            <span id="profile-name">Benutzer</span>
-          </div>
-        </header>
-
-        <main class="content-area">
-          <section id="page-dashboard" class="page-section">
-            <div class="welcome-row">
-              <div>
-                <p class="eyebrow">Ihr Arbeitsplatz, zentral verwaltet</p>
-                <h1>Guten Tag</h1>
-                <p class="muted">Installieren und verwalten Sie Ihre Firmenprogramme an einem Ort.</p>
-              </div>
-            </div>
-
-            <div class="summary-grid">
-              <article class="summary-card glass-panel">
-                <span class="summary-icon icon-blue" aria-hidden="true">▦</span>
-                <div><span>Einträge im Katalog</span><strong id="program-count">00</strong></div>
-              </article>
-              <article class="summary-card glass-panel">
-                <span class="summary-icon icon-green" aria-hidden="true">✓</span>
-                <div><span>Installiert</span><strong id="installed-count">00</strong></div>
-              </article>
-              <article class="summary-card glass-panel">
-                <span class="summary-icon icon-violet" aria-hidden="true">↻</span>
-                <div><span>Verfügbare Updates</span><strong>00</strong></div>
-              </article>
-            </div>
-
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">Für Ihr Team</p>
-                <h2>Empfohlene Programme</h2>
-              </div>
-              <button class="text-button" type="button" data-page="programs">Alle Programme <span aria-hidden="true">→</span></button>
-            </div>
-            <div id="featured-programs" class="program-grid"></div>
-          </section>
-
-          <section id="page-programs" class="page-section hidden">
-            <div class="page-heading">
-              <p class="eyebrow">Software-Katalog</p>
-              <h1>Programme</h1>
-              <p class="muted">Die von Ihrem Unternehmen bereitgestellten Anwendungen.</p>
-            </div>
-            <div id="program-catalog" class="program-grid"></div>
-          </section>
+          <div id="program-catalog" class="program-grid"></div>
+        </section>
 
           <section id="page-settings" class="page-section hidden">
             <div class="page-heading">
-              <p class="eyebrow">Persönlich anpassen</p>
               <h1>Einstellungen</h1>
               <p class="muted">Verwalten Sie Download- und Updateoptionen.</p>
             </div>
@@ -196,7 +125,11 @@
             </section>
           </section>
         </main>
-      </section>
+
+      <footer class="statusbar">
+        <span class="support-dot" aria-hidden="true"></span>
+        <span id="core-version">Assistent bereit</span>
+      </footer>
     </div>
 
     <dialog id="release-notes-dialog" class="release-dialog">

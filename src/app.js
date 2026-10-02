@@ -21,8 +21,9 @@ function renderPrograms(container) {
   for (const program of programs) {
     const card = document.createElement("article");
     card.className = "program-card";
-    const header = document.createElement("div");
-    header.className = "program-card-head";
+
+    const art = document.createElement("div");
+    art.className = "program-art";
     const logo = document.createElement("span");
     logo.className = "program-logo";
     logo.setAttribute("aria-hidden", "true");
@@ -30,32 +31,42 @@ function renderPrograms(container) {
     const status = document.createElement("span");
     status.className = "program-status";
     status.textContent = program.status;
-    header.append(logo, status);
+    art.append(logo, status);
 
-    const kind = document.createElement("span");
-    kind.className = "program-kind";
-    kind.textContent = program.type === "vst" ? "VST-Plugin" : "Programm";
-    const name = document.createElement("h3");
-    name.textContent = program.name;
+    const body = document.createElement("div");
+    body.className = "program-body";
     const description = document.createElement("p");
+    description.className = "program-description";
     description.textContent = program.description;
-
     const note = document.createElement("p");
     note.className = "program-note";
     note.textContent = program.installationNote;
+    body.append(description, note);
 
     const footer = document.createElement("div");
     footer.className = "program-card-footer";
-    const version = document.createElement("span");
-    version.className = "program-version";
-    version.textContent = `Version ${program.version}`;
+    const title = document.createElement("div");
+    title.className = "program-title";
+    const name = document.createElement("h3");
+    name.textContent = program.name;
+    const meta = document.createElement("span");
+    meta.className = "program-version";
+    meta.textContent = `${program.type === "vst" ? "VST-Plugin" : "Programm"} · Version ${program.version}`;
+    title.append(name, meta);
+
+    const installed = program.status === "Installiert" || program.status === "Update";
     const actions = document.createElement("div");
     actions.className = "program-actions";
-    for (const [action, label, style] of [
-      ["install", "Installieren", "button-primary"],
-      ["update", "Update", "button-secondary"],
-      ["uninstall", "Deinstallieren", "button-secondary"]
-    ]) {
+    const available = [];
+    if (program.status === "Update") {
+      available.push(["update", "Update", "button-primary"]);
+    }
+    if (installed) {
+      available.push(["uninstall", "Deinstallieren", "button-secondary"]);
+    } else {
+      available.push(["install", "Installieren", "button-primary"]);
+    }
+    for (const [action, label, style] of available) {
       const button = document.createElement("button");
       button.className = `button ${style}`;
       button.type = "button";
@@ -65,14 +76,14 @@ function renderPrograms(container) {
       button.textContent = label;
       actions.append(button);
     }
-    footer.append(version, actions);
-    card.append(header, kind, name, description, note, footer);
+    footer.append(title, actions);
+    card.append(art, body, footer);
     container.append(card);
   }
 }
 
 function showPage(pageName) {
-  const pageNames = ["dashboard", "programs", "settings"];
+  const pageNames = ["programs", "settings"];
   if (!pageNames.includes(pageName)) {
     return;
   }
@@ -81,10 +92,7 @@ function showPage(pageName) {
     document.querySelector(`#page-${page}`).classList.toggle("hidden", page !== pageName);
     document.querySelector(`[data-page="${page}"]`)?.classList.toggle("is-active", page === pageName);
   }
-  document.querySelector("#breadcrumb-current").textContent =
-    pageName === "dashboard" ? "Übersicht" : pageName === "programs" ? "Programme" : "Einstellungen";
 }
-
 async function populateSettings() {
   const settings = await api.loadSettings();
   document.querySelector("#download-directory").value = settings.downloadDirectory;
@@ -117,18 +125,14 @@ async function enterDashboard(username) {
     programs = await api.listPrograms();
     await populateSettings();
     document.querySelector("#core-version").textContent =
-      `App-Core ${await api.getCoreVersion()}`;
+      `Alles aktuell · App-Core ${await api.getCoreVersion()}`;
 
     document.querySelector("#profile-name").textContent = username;
     document.querySelector("#profile-initials").textContent =
       username.trim().slice(0, 2).toUpperCase() || "JS";
     loginScreen.classList.add("hidden");
     appShell.classList.remove("hidden");
-    renderPrograms(document.querySelector("#featured-programs"));
     renderPrograms(document.querySelector("#program-catalog"));
-    document.querySelector("#program-count").textContent = String(programs.length).padStart(2, "0");
-    document.querySelector("#installed-count").textContent =
-      String(programs.filter((program) => program.status === "Installiert").length).padStart(2, "0");
   }
 }
 
