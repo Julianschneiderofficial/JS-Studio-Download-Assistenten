@@ -1,13 +1,14 @@
 {
-  "version": "1.0.4",
+  "version": "1.0.5",
   "changelog": [
     "Demo-Anmeldung akzeptiert beliebige nichtleere Zugangsdaten einschließlich admin/admin.",
-    "Login bleibt im Deep-Dark-Design und kennzeichnet den nicht authentifizierten Demo-Modus."
+    "Login bleibt im Deep-Dark-Design und kennzeichnet den nicht authentifizierten Demo-Modus.",
+    "Die SHA-256-Pruefsummen sind auf die von GitHub ausgelieferten LF-Dateien abgestimmt."
   ],
   "files": {
-    "index.html": "e9173fbf2805a6548e0336a4a1672f5a49979eae7586e1d35e492b6a5834fd79",
-    "styles.css": "bc2a735d209ffa8e81c6c42bc441dc86038dc4add58f2e3aeb6edfd565c15c97",
-    "src/app.js": "c173d79969a97d35ea92369ce14d7eb518c27c48d14ee33ca370e66dfa437daf",
-    "catalog.json": "3bb07e49e17afa28d691a7ee2f6c8137eab7a4b2ad03f23e0459239fe54c9a98"
+    "index.html": "c8513dc9a567bc4fed5d1fb3a22b21e89407da2f3cd6258825730aed73de7323",
+    "styles.css": "99420223390c1dfa267fcefc8f73349415ff9c79e0bb161d07b2ea52370bfb4a",
+    "src/app.js": "20f7856b8074774513192f4ec8f03d5cbcadd2cb275a65bfd112639282864ec2",
+    "catalog.json": "cc4bba80617bee101c0144c4611335cde16b29be2f45f5f1e1770ac4a116b496"
   }
 }
