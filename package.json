@@ -1,6 +1,6 @@
 {
   "name": "js-studio-download-assistent",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Download-Assistent fuer JS Studio Firmenprogramme",
   "main": "main.js",

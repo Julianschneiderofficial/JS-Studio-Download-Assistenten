@@ -12,6 +12,8 @@ function subscribe(channel, callback) {
 }
 
 contextBridge.exposeInMainWorld("downloadAssistant", {
+  getAuthStatus: () => ipcRenderer.invoke("auth:status"),
+  setupDemoAccount: (credentials) => ipcRenderer.invoke("auth:setup", credentials),
   login: (credentials) => ipcRenderer.invoke("auth:login", credentials),
   loadSettings: () => ipcRenderer.invoke("settings:load"),
   saveSettings: (settings) => ipcRenderer.invoke("settings:save", settings),

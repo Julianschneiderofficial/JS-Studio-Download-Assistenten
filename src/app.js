@@ -5,6 +5,7 @@ const loginScreen = document.querySelector("#login-screen");
 const appShell = document.querySelector("#app-shell");
 const loginForm = document.querySelector("#login-form");
 const loginError = document.querySelector("#login-error");
+let accountConfigured = false;
 const settingsForm = document.querySelector("#settings-form");
 const settingsMessage = document.querySelector("#settings-message");
 
@@ -91,6 +92,22 @@ async function populateSettings() {
   document.querySelector("#automatic-updates").checked = settings.automaticUpdates;
 }
 
+function setAccountSetupMode(enabled) {
+  accountConfigured = !enabled;
+  document.querySelector("#login-eyebrow").textContent = enabled ? "Einmalige Einrichtung" : "Willkommen zurück";
+  document.querySelector("#login-heading").textContent =
+    enabled ? "Lokales Demo-Konto erstellen" : "Bei Ihrem Konto anmelden";
+  document.querySelector("#login-description").textContent = enabled
+    ? "Legen Sie ein lokales Konto für diesen Windows-Benutzer an."
+    : "Melden Sie sich an, um Ihre Firmenprogramme zu verwalten.";
+  document.querySelector("#password-confirmation-group").classList.toggle("hidden", !enabled);
+  document.querySelector("#password-confirmation").required = enabled;
+  document.querySelector("#password").autocomplete = enabled ? "new-password" : "current-password";
+  document.querySelector("#login-submit").textContent = enabled ? "Konto erstellen & anmelden" : "Anmelden";
+  document.querySelector("#login-footnote").textContent =
+    "Lokales Demo-Konto – keine Unternehmensauthentifizierung";
+}
+
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginError.textContent = "";
@@ -99,10 +116,17 @@ loginForm.addEventListener("submit", async (event) => {
   const submitButton = loginForm.querySelector('[type="submit"]');
   submitButton.disabled = true;
   try {
-    const result = await api.login({
+    const credentials = {
       username: formData.get("username"),
       password: formData.get("password")
-    });
+    };
+    if (accountConfigured && credentials.password !== formData.get("passwordConfirmation")) {
+      loginError.textContent = "Die Passwörter stimmen nicht überein.";
+      return;
+    }
+    const result = accountConfigured
+      ? await api.login(credentials)
+      : await api.setupDemoAccount(credentials);
     if (!result.authenticated) {
       loginError.textContent = "Benutzername oder Passwort ist nicht korrekt.";
       return;
@@ -243,6 +267,13 @@ document.querySelector("#uninstall-assistant").addEventListener("click", async (
 });
 
 if (api) {
+  api.getAuthStatus()
+    .then((status) => setAccountSetupMode(!status.configured))
+    .catch((error) => {
+      loginError.textContent = `Lokales Konto konnte nicht geprüft werden: ${error.message}`;
+      loginForm.querySelector('[type="submit"]').disabled = true;
+    });
+
   api.onUpdateStatus((status) => {
     if (status?.message) {
       showToast(status.message, status.type === "error");
