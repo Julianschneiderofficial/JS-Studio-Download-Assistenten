@@ -91,21 +91,29 @@ async function populateSettings() {
   document.querySelector("#automatic-updates").checked = settings.automaticUpdates;
 }
 
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  loginError.textContent = "";
+const SESSION_KEY = "jsStudioSession";
 
-  const formData = new FormData(loginForm);
-  const submitButton = loginForm.querySelector('[type="submit"]');
-  submitButton.disabled = true;
+function readSession() {
   try {
-    const username = String(formData.get("username") || "").trim();
-    const password = String(formData.get("password") || "");
-    if (!username || !password) {
-      loginError.textContent = "Bitte geben Sie einen Benutzernamen und ein Passwort ein.";
-      return;
-    }
+    const session = JSON.parse(localStorage.getItem(SESSION_KEY));
+    return session && typeof session.username === "string" && session.username.trim()
+      ? session
+      : null;
+  } catch {
+    return null;
+  }
+}
 
+function clearSession() {
+  try {
+    localStorage.removeItem(SESSION_KEY);
+  } catch {
+    // Storage nicht verfügbar; nichts zu löschen.
+  }
+}
+
+async function enterDashboard(username) {
+  {
     programs = await api.listPrograms();
     await populateSettings();
     document.querySelector("#core-version").textContent =
@@ -121,6 +129,34 @@ loginForm.addEventListener("submit", async (event) => {
     document.querySelector("#program-count").textContent = String(programs.length).padStart(2, "0");
     document.querySelector("#installed-count").textContent =
       String(programs.filter((program) => program.status === "Installiert").length).padStart(2, "0");
+  }
+}
+
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  loginError.textContent = "";
+
+  const formData = new FormData(loginForm);
+  const submitButton = loginForm.querySelector('[type="submit"]');
+  submitButton.disabled = true;
+  try {
+    const username = String(formData.get("username") || "").trim();
+    const password = String(formData.get("password") || "");
+    if (!username || !password) {
+      loginError.textContent = "Bitte geben Sie einen Benutzernamen und ein Passwort ein.";
+      return;
+    }
+
+    await enterDashboard(username);
+    if (formData.get("remember")) {
+      try {
+        localStorage.setItem(SESSION_KEY, JSON.stringify({ username }));
+      } catch {
+        showToast("Anmeldung konnte nicht gespeichert werden.", true);
+      }
+    } else {
+      clearSession();
+    }
   } catch (error) {
     loginError.textContent = error.message;
   } finally {
@@ -129,6 +165,7 @@ loginForm.addEventListener("submit", async (event) => {
 });
 
 document.querySelector("#logout-button").addEventListener("click", () => {
+  clearSession();
   appShell.classList.add("hidden");
   loginScreen.classList.remove("hidden");
   loginForm.reset();
@@ -260,6 +297,15 @@ if (api) {
     content.append(heading, list);
     document.querySelector("#release-notes-dialog").showModal();
   });
+
+  const savedSession = readSession();
+  if (savedSession) {
+    document.querySelector("#username").value = savedSession.username;
+    document.querySelector("#remember-me").checked = true;
+    enterDashboard(savedSession.username).catch((error) => {
+      loginError.textContent = error.message;
+    });
+  }
 } else {
   loginError.textContent = "Bitte starten Sie den Download-Assistenten über die Desktop-App.";
   loginForm.querySelector('[type="submit"]').disabled = true;

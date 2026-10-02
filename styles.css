@@ -330,6 +330,23 @@ p {
   margin-top: 4px;
 }
 
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  color: #9ca3af;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.remember-me input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: #2563eb;
+}
+
 .login-footnote {
   margin: 19px 0 0;
   color: var(--muted);

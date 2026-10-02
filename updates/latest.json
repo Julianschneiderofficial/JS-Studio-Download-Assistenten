@@ -1,15 +1,16 @@
 {
-  "version": "1.0.6",
+  "version": "1.0.7",
   "changelog": [
     "Demo-Anmeldung akzeptiert beliebige nichtleere Zugangsdaten einschließlich admin/admin.",
     "Login bleibt im Deep-Dark-Design und kennzeichnet den nicht authentifizierten Demo-Modus.",
     "Die SHA-256-Pruefsummen sind auf die von GitHub ausgelieferten LF-Dateien abgestimmt.",
-    "Die Einstellungen enthalten jetzt eine hervorgehobene rote Deinstallation fuer den Windows-Assistenten."
+    "Die Einstellungen enthalten jetzt eine hervorgehobene rote Deinstallation fuer den Windows-Assistenten.",
+    "Neue Option \"Angemeldet bleiben\" speichert nur den Benutzernamen lokal und meldet beim Start automatisch an."
   ],
   "files": {
-    "index.html": "cf910fac77dc43d091226a3c02a0ad01015c9252828ff11b29af303a1eac2fd7",
-    "styles.css": "a7dafb75aa257d55e38d06490b300d78d68690e9c2926f82a48814773ca98ea0",
-    "src/app.js": "20f7856b8074774513192f4ec8f03d5cbcadd2cb275a65bfd112639282864ec2",
+    "index.html": "8e2605e7eb8753477f83ed599de326392315054ad8577171ae1b4c4b9eb9c58d",
+    "styles.css": "9412e89377b744447ba8272aed457159c005ec89c19adaf3954e7c11ce37ddb3",
+    "src/app.js": "0124ab1a5a5596f488652e91138fffc49f293639ba68f2431ec89357055912c2",
     "catalog.json": "cc4bba80617bee101c0144c4611335cde16b29be2f45f5f1e1770ac4a116b496"
   }
 }
